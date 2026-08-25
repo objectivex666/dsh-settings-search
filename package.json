@@ -1,0 +1,43 @@
+{
+  "name": "@objectivex666/dsh-settings-search",
+  "version": "1.0.0",
+  "description": "DSH settings panel search plugin – instantly filter setting sections and general items with navigation guidance.",
+  "keywords": [
+    "dsh",
+    "cordis",
+    "settings",
+    "search",
+    "plugin",
+    "koishi",
+    "chatbot"
+  ],
+  "homepage": "https://github.com/objectivex666/dsh-settings-search#readme",
+  "bugs": {
+    "url": "https://github.com/objectivex666/dsh-settings-search/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/objectivex666/dsh-settings-search.git"
+  },
+  "license": "GPL-3.0",
+  "author": "objectivex666",
+  "type": "commonjs",
+  "main": "dsh-settings-search.js",
+  "files": [
+    "dsh-settings-search.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "cordis": "^3.0.0 || ^4.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
