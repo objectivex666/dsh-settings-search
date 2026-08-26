@@ -1,0 +1,9 @@
+# dsh-settings-search bundle layer: applied automatically when the package is
+# installed into a DSH profile (`dsh plugin add @objectivex666/dsh-settings-search`
+# or `dsh plugin add github:objectivex666/dsh-settings-search`), because the
+# manifest declares `dsh.bundle.patch`. No manual cordis.patch.yml edits are
+# needed. Later layers (the profile's own cordis.patch.yml, --patch overlays)
+# override these rows by id.
+- insert:
+    - id: settings-search
+      name: '@objectivex666/dsh-settings-search'

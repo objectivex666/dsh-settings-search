@@ -1,9 +1,10 @@
 /**
- * settings-search 插件源文件（set-1 / pkg-4，正在运行）
+ * settings-search 动态插件源文件（legacy，仅会话内临时使用）
  *
  * 说明：
  * - 这是 DSH 动态 Cordis 插件（Client half）的源码，通过 cordis_define 注册到运行中的
- *   DSH 进程，不落盘；此文件是手动导出的副本，供查看 / 复用。
+ *   DSH 进程，不落盘。仅供会话内临时使用；命令行安装请改用本仓库的 profile bundle
+ *   形态（`dsh plugin add`，见 README），其浏览器半位于 lib/client.js，与本文件等价。
  * - 功能：在设置面板左侧导航栏顶部（settings.header 槽，priority:-1 shadow）添加搜索框，
  *   输入关键词实时搜索所有已注册设置页（settings.section）与通用设置项
  *   （settings.general.item），浮层展示结果，点击后显示左侧导航定位引导。
