@@ -62,8 +62,8 @@ jobs:
               (nMin===pMin && nPat===pPat && nMaj===pMaj+1) ||
               (nMaj===pMaj && nPat===pPat && nMin===pMin+1) ||
               (nMaj===pMaj && nMin===pMin && nPat===pPat+1);
-            if (!ok) { console.error('::error::'+process.argv[1]+" is not a strict semver bump from "+process.argv[2]); process.exit(1); }
-            console.log("OK: "+process.argv[1]+" increments "+process.argv[2]);
+            if (!ok) { console.error('::error::'+process.argv[1]+' is not a strict semver bump from '+process.argv[2]); process.exit(1); }
+            console.log('OK: '+process.argv[1]+' increments '+process.argv[2]);
           " "${PKG_VERSION}" "${LATEST}"
       - name: Guard — skip if this version is already on npm
         id: guard
