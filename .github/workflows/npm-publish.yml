@@ -1,13 +1,18 @@
 name: Publish to npm
 
 # 发布流程：改 package.json 版本 → commit → 打 vX.Y.Z 标签并推送 → 自动发布到 npm。
-# 手动触发（workflow_dispatch）则直接发布当前分支的版本。
+# 手动触发（workflow_dispatch）需要显式传入 expected_version，且必须匹配 package.json。
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      expected_version:
+        description: 'Must match package.json version exactly'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -21,22 +26,25 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
-      - name: Guard — tag must match package.json version
-        if: github.ref_type == 'tag'
+      - name: Guard — published artifact must match declared version
         shell: bash
         run: |
-          PKG_VERSION="v$(node -p "require('./package.json').version")"
-          TAG_VERSION="${GITHUB_REF_NAME}"
-          echo "tag=${TAG_VERSION} package.json=${PKG_VERSION}"
-          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::git tag ${TAG_VERSION} does not match package.json version ${PKG_VERSION}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            EXPECTED="${GITHUB_REF_NAME#v}"
+          else
+            EXPECTED="${{ github.event.inputs.expected_version }}"
+          fi
+          echo "trigger=${GITHUB_REF_TYPE} version=${PKG_VERSION} declared=${EXPECTED}"
+          if [ "$PKG_VERSION" != "$EXPECTED" ]; then
+            echo "::error::Version mismatch: package.json=${PKG_VERSION}, declared=${EXPECTED}"
             exit 1
           fi
 
