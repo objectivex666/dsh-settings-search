@@ -73,6 +73,33 @@ dsh plugin --profile web add /path/to/dsh-settings-search
 
 ---
 
+## 版本发布规范
+
+本项目严格遵循 [npm 语义化版本](https://docs.npmjs.com/about-semantic-versioning)（SemVer）：
+
+| 类型 | 何时使用 | 版本变化 |
+|------|----------|----------|
+| **Patch（补丁）** | Bug 修复、安全修复、文档修正 | `1.4.1 → 1.4.2` |
+| **Minor（次要）** | 新增向后兼容的功能 | `1.4.2 → 1.5.0` |
+| **Major（主要）** | 不兼容的 API 变更或破坏性修改 | `1.5.0 → 2.0.0` |
+
+### 发布流程
+
+1. 修改 `package.json` 版本号（必须是递增的正整数）。
+2. 同步 `lib/client.js` 中的 `PKG_VERSION` 常量。
+3. 运行 `npm test` 确保通过。
+4. 提交代码并打 `vX.Y.Z` 标签推送：
+   `bash
+   npm version patch # 或 minor / major
+   git push origin main --tags
+   `
+5. GitHub Actions 自动校验版本号是否为上一个已发布版本的合法 semver 增量，通过后发布到 npm。
+
+> CI 会拒绝任何跳版本（如 `1.4.1 → 1.4.3`）、回退或非增量更新。
+
+---
+
+
 ## 包结构
 
 ```

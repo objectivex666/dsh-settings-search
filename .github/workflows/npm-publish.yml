@@ -48,6 +48,23 @@ jobs:
             exit 1
           fi
 
+
+      - name: Guard — validate semver increment from latest published version
+        shell: bash
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          NAME="$(node -p "require('./package.json').name")"
+          LATEST=$(npm view "${NAME}" version 2>/dev/null || echo "0.0.0")
+          node -e "
+            const [nMaj,nMin,nPat] = process.argv[1].split('.').map(Number);
+            const [pMaj,pMin,pPat] = process.argv[2].split('.').map(Number);
+            const ok =
+              (nMin===pMin && nPat===pPat && nMaj===pMaj+1) ||
+              (nMaj===pMaj && nPat===pPat && nMin===pMin+1) ||
+              (nMaj===pMaj && nMin===pMin && nPat===pPat+1);
+            if (!ok) { console.error('::error::'+process.argv[1]+" is not a strict semver bump from "+process.argv[2]); process.exit(1); }
+            console.log("OK: "+process.argv[1]+" increments "+process.argv[2]);
+          " "${PKG_VERSION}" "${LATEST}"
       - name: Guard — skip if this version is already on npm
         id: guard
         shell: bash
