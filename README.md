@@ -80,7 +80,6 @@ lib/index.js        Host half（空实现，保证作为合法 Cordis 插件行�
 lib/client.js       Browser half（搜索框 UI，__ModuleLoader__ 格式）
 cordis.patch.yml    组合补丁：插入 settings-search 插件行
 scripts/check.mjs   结构自检（npm test）
-dsh-settings-search.js  动态插件源（可选：DSH 会话内 cordis_define 用法）
 ```
 
 ## 开发
@@ -89,8 +88,6 @@ dsh-settings-search.js  动态插件源（可选：DSH 会话内 cordis_define �
 npm test   # 校验 host 半、dsh.client 清单、client bundle handoff
 ```
 
-## 动态插件用法（可选）
-
-旧版用法：把 `dsh-settings-search.js` 的内容作为 `code.client` 通过 DSH 的
-动态插件系统（`cordis_define`）注册，仅供会话内临时使用；命令行安装请使用
-上文的 profile bundle 方式。
+> 历史说明：v1.1 及之前仓库曾附带 `dsh-settings-search.js`（会话内
+> `cordis_define` 动态插件源）。因与正式包代码长期双份维护漂移，已于 v1.4.1
+> 移除；如需动态用法可从 git 历史（tag `v1.4.0`）取回参考。

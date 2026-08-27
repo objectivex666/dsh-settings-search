@@ -80,7 +80,6 @@ lib/index.js        Host half (no-op — makes the package a valid Cordis plugin
 lib/client.js       Browser half (search UI, __ModuleLoader__ format)
 cordis.patch.yml    Composition patch: inserts the settings-search plugin row
 scripts/check.mjs   Structural self-checks (npm test)
-dsh-settings-search.js  Dynamic-plugin source (optional: in-session cordis_define usage)
 ```
 
 ## Development
@@ -89,6 +88,7 @@ dsh-settings-search.js  Dynamic-plugin source (optional: in-session cordis_defin
 npm test   # validates the host half, the dsh.client manifest, and the client bundle handoff
 ```
 
-## Dynamic-plugin usage (optional)
-
-Legacy usage: register the contents of `dsh-settings-search.js` as `code.client` through DSH's dynamic plugin system (`cordis_define`) — session-only and temporary. For anything persistent, use the profile-bundle install above.
+> Historical note: up to v1.1 the repo shipped `dsh-settings-search.js` (an
+> in-session `cordis_define` dynamic-plugin source). Because keeping it in
+> sync with the shipping package kept drifting silently, it was removed in
+> v1.4.1; retrieve it from git history (tag `v1.4.0`) if you need a reference.
