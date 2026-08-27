@@ -13,7 +13,9 @@
 ## Features
 
 - 🔍 **Live search** — a search box at the top of the settings panel's left navigation filters every registered settings page (`settings.section`) and general item (`settings.general.item`) as you type.
-- 🧭 **Navigation guidance** — clicking a result shows which left-navigation entry owns that setting, so you can jump straight to it.
+- 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), Web UI plugin cards (`web-ui.plugin.item`), general rows, and more, each shown with a "page › option" breadcrumb.
+- 🧭 **Click-to-jump** — selecting a result clicks the matching left-nav entry to open its section; for tab options it also opens the tab and flashes the target row. A manual-path hint appears if automatic navigation is not possible.
+- 🌱 **Progressive indexing** — self-drawing settings rows are harvested from the rendered DOM (via their `[data-slot]` anchors) the first time their page is visited, then stay searchable.
 - 🌐 **i18n** — built-in Chinese/English dictionaries that follow the DSH localization system and are easy to extend.
 - 🎨 **Theme-aware** — styled entirely with CSS variables, automatically following the DSH theme (light/dark).
 - ⚡ **Reactive** — subscribes to settings entries being added, removed, or changed, and refreshes results automatically.
