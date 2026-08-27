@@ -54,6 +54,12 @@ check(typeof client.apply === 'function', 'client half must export apply(ctx)')
 check(Array.isArray(client.inject) && client.inject.includes('slots') && client.inject.includes('locale'),
   'client half inject must include "slots" and "locale"')
 
+// 4. embedded version constant matches the manifest (update panel displays it)
+const versionMatch = /const PKG_VERSION = '([^']+)'/.exec(source)
+check(versionMatch !== null, 'lib/client.js must define const PKG_VERSION')
+check(versionMatch?.[1] === pkg.version,
+  `PKG_VERSION (${versionMatch?.[1]}) must equal package.json version (${pkg.version})`)
+
 if (failed > 0) {
   console.error(`${failed} check(s) failed`)
   process.exit(1)
