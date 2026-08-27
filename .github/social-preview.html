@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    color: #e8eaed;
+    background:
+      radial-gradient(900px 500px at 82% 18%, rgba(76,141,255,.16), transparent 60%),
+      radial-gradient(700px 460px at 12% 88%, rgba(63,185,111,.07), transparent 60%),
+      linear-gradient(135deg, #12151b 0%, #0b0d11 100%);
+  }
+
+  /* ---------- left brand column ---------- */
+  .brand { position: absolute; left: 72px; top: 118px; width: 470px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: .14em; color: #7fa7e8;
+    border: 1px solid rgba(127,167,232,.35); border-radius: 999px;
+    padding: 5px 14px; margin-bottom: 22px;
+    background: rgba(76,141,255,.08);
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: #4c8dff; }
+  h1 { font-size: 52px; line-height: 1.1; letter-spacing: -0.5px; font-weight: 700; }
+  h1 .suffix { color: #4c8dff; }
+  .tagline-zh { margin-top: 18px; font-size: 21px; color: #c3cad4; line-height: 1.55; }
+  .tagline-en { margin-top: 6px; font-size: 15px; color: #8a93a0; }
+  .feat-list { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
+  .feat { display: flex; align-items: center; gap: 10px; font-size: 15px; color: #aab3bf; }
+  .feat b { color: #e8eaed; font-weight: 600; }
+  .feat .tick { flex: none; width: 18px; height: 18px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(63,185,111,.15); color: #3fb96f; font-size: 11px; font-weight: 700; }
+  .install { margin-top: 34px; display: inline-flex; align-items: center; gap: 12px;
+    font-family: ui-monospace, Consolas, 'Courier New', monospace;
+    font-size: 15.5px; color: #dbe4f0;
+    background: #171b22; border: 1px solid #2a303a; border-radius: 10px; padding: 12px 18px; }
+  .install .ps { color: #3fb96f; user-select: none; }
+  .foot { position: absolute; left: 72px; bottom: 44px; font-size: 13.5px; color: #6d7683; }
+  .foot code { color: #9db4d8; font-family: inherit; }
+
+  /* ---------- right mock panel ---------- */
+  .panel {
+    position: absolute; right: 64px; top: 84px; width: 600px; height: 472px;
+    background: #12151a; border: 1px solid #272d37; border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.03) inset;
+    display: flex; overflow: hidden;
+  }
+  .navcol { width: 218px; flex: none; background: #15181e; border-right: 1px solid #232933;
+    padding: 14px 10px; position: relative; z-index: 2; }
+  .ptitle { font-size: 16px; font-weight: 600; padding: 2px 8px 10px; }
+
+  .sbox { display: flex; align-items: center; gap: 6px; height: 32px; margin: 0 2px;
+    padding: 0 8px; border: 1px solid #4c8dff; border-radius: 8px;
+    background: #0f1319; box-shadow: 0 0 0 3px rgba(76,141,255,.14); }
+  .sbox svg { flex: none; }
+  .sbox .q { font-size: 13.5px; color: #eef1f5; }
+  .caret { width: 1.5px; height: 16px; background: #4c8dff; margin-left: -1px;
+    animation: blink 1.05s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .clear { margin-left: auto; flex: none; width: 16px; height: 16px; border-radius: 4px;
+    background: #232933; color: #97a1ae; font-size: 9px; display: inline-flex;
+    align-items: center; justify-content: center; }
+
+  .pop { margin-top: 8px; background: #191d25; border: 1px solid #2c333e; border-radius: 10px;
+    box-shadow: 0 18px 42px rgba(0,0,0,.5); padding: 7px; }
+  .ghead { font-size: 10px; letter-spacing: .06em; color: #79828e; padding: 3px 6px 5px; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; }
+  .row.hot { background: rgba(76,141,255,.16); outline: 1px solid rgba(76,141,255,.35); }
+  .row .txt { min-width: 0; }
+  .row .lb { font-size: 12.5px; color: #e8eaed; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .pb { font-size: 9.5px; color: #79828e; margin-top: 1px; }
+  .kind { flex: none; margin-left: auto; font-size: 9px; color: #8a93a0;
+    border: 1px solid #2c333e; border-radius: 4px; padding: 1px 5px; }
+  .row.hot .kind { color: #9dc0ff; border-color: rgba(76,141,255,.45); }
+
+  .navlist { margin-top: 260px; display: flex; flex-direction: column; gap: 2px; }
+  .nitem { font-size: 12.5px; color: #9aa3ad; padding: 6px 8px; border-radius: 6px; display: flex; align-items: center; }
+  .nitem.on { background: #20242c; color: #e8eaed; }
+  .chip { margin-left: auto; font-size: 8.5px; color: #3fb96f; border: 1px solid rgba(63,185,111,.4);
+    border-radius: 999px; padding: 0 5px; line-height: 14px; }
+
+  .content { flex: 1; padding: 16px 20px; position: relative; }
+  .chead { font-size: 14px; font-weight: 600; color: #cfd5dd; padding-bottom: 12px; }
+  .card { border: 1px solid #232933; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: #14171d; }
+  .card.flash { animation: glowfade 1.6s ease-out forwards; }
+  @keyframes glowfade { 0% { background: rgba(76,141,255,.22); } 75% { background: rgba(76,141,255,.16); } 100% { background: #14171d; } }
+  .cl { font-size: 12.5px; color: #dde2e9; }
+  .cs { font-size: 10.5px; color: #79828e; margin-top: 4px; }
+  .seg { display: inline-flex; margin-left: auto; }
+  .segb { width: 46px; height: 22px; border: 1px solid #2c333e; font-size: 10px; color: #9aa3ad;
+    display: inline-flex; align-items: center; justify-content: center; }
+  .segb:first-child { border-radius: 6px 0 0 6px; }
+  .segb:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+  .segb.on { background: rgba(76,141,255,.2); color: #cfe0ff; border-color: rgba(76,141,255,.4); }
+</style>
+</head>
+<body>
+  <div class="brand">
+    <div class="eyebrow"><span class="dot"></span>DSH PLUGIN · CORDIS</div>
+    <h1>dsh-<span class="suffix">settings-search</span></h1>
+    <div class="tagline-zh">为 DSH 设置面板装上即时搜索<br>直达每个设置项内部的选项</div>
+    <div class="tagline-en">Instant search across every corner of the DeepSeek Harness settings panel.</div>
+    <div class="feat-list">
+      <div class="feat"><span class="tick">✓</span><span><b>实时过滤</b> 设置页、标签页、页内选项一次搜全</span></div>
+      <div class="feat"><span class="tick">✓</span><span><b>点击即达</b> 自动跳转分区 / 标签，并高亮目标行</span></div>
+      <div class="feat"><span class="tick">✓</span><span><b>检查更新</b> 自带设置页，一键对比 npm 最新版本</span></div>
+    </div>
+    <div class="install"><span class="ps">$</span>dsh plugin add @objectivex666/dsh-settings-search</div>
+  </div>
+
+  <div class="panel">
+    <div class="navcol">
+      <div class="ptitle">设置</div>
+      <div class="sbox">
+        <svg width="15" height="15" viewBox="0 0 16.5 16.5" fill="none"><path d="M11.89 6.65A5.27 5.27 0 1 1 6.62 1.36a5.27 5.27 0 0 1 5.27 5.29ZM13.25 6.65A6.63 6.63 0 1 1 0 6.65a6.62 6.62 0 0 1 13.25 0Z" fill="#8a93a0"/><path d="m16 15.04-.95.96-3.52-3.53.96-.96L16 15.04Z" fill="#8a93a0"/></svg>
+        <span class="q">插件</span><span class="caret"></span><span class="clear">✕</span>
+      </div>
+      <div class="pop">
+        <div class="ghead">设置页</div>
+        <div class="row"><div class="txt"><div class="lb">插件</div></div><span class="kind">页面</span></div>
+        <div class="row"><div class="txt"><div class="lb">Web UI 插件</div></div><span class="kind">页面</span></div>
+        <div class="ghead" style="padding-top:8px;">页内选项</div>
+        <div class="row hot"><div class="txt"><div class="lb">插件管理</div><div class="pb">插件 › 页内选项</div></div><span class="kind">选项</span></div>
+        <div class="row"><div class="txt"><div class="lb">Doctor 恢复控制台</div><div class="pb">Web UI 插件 › 页内选项</div></div><span class="kind">选项</span></div>
+      </div>
+      <div class="navlist">
+        <div class="nitem">插件市场</div>
+        <div class="nitem on">设置搜索<span class="chip">v1.4.1</span></div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="chead">设置搜索</div>
+      <div class="card flash">
+        <div style="display:flex;">
+          <div>
+            <div class="cl">发现新版本 v9.9.9 —— 更新命令已就绪</div>
+            <div class="cs">registry.npmjs.org 检查于刚刚</div>
+          </div>
+          <span class="seg" style="margin-top:6px;"><span class="segb on">复制</span><span class="segb">重试</span></span>
+        </div>
+      </div>
+      <div class="card"><div style="display:flex;">
+        <div><div class="cl">当前版本 1.4.1</div><div class="cs">与 npm latest 保持同步 ✓</div></div>
+      </div></div>
+      <div class="card"><div style="display:flex;">
+        <div><div class="cl">权限 · 选择新会话的默认权限模式</div><div class="cs">通用设置 › 页内选项（已索引）</div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="foot">GPL-3.0 · <code>@objectivex666/dsh-settings-search</code> · github.com/objectivex666/dsh-settings-search</div>
+</body>
+</html>
