@@ -2,6 +2,18 @@
 
 The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese version.
 
+## v1.7.1
+
+### ✨ Features
+- **View release notes** — a new button next to “Check for updates” fetches the GitHub release notes and shows them inline; if fetching fails it opens the release page automatically.
+- **Issues welcome** — README now has a “Feedback & contributions” section inviting bug reports, feature ideas, and pull requests.
+
+### 🐛 Fixes
+- Unified the “Check for updates” button color with the “Save config” button for a consistent look.
+- Ran a Codex Security review of the working tree: no reportable vulnerabilities found; no security regressions.
+
+---
+
 ## v1.7.0
 
 ### ✨ Features

@@ -21,6 +21,7 @@
 - 🧭 **点击即达**：选中结果后自动点击对应的左侧导航项打开所在分区；若是页内标签页会继续点开对应标签，并高亮闪烁目标选项行。无法自动跳转时显示手动路径提示。
 - 🌱 **渐进索引**：自绘界面的设置行会在其所在页面首次被访问时从渲染 DOM 中收割标题并加入索引（此后始终可搜）。
 - 🛠 **自带设置页（v1.4.0）**：左侧导航新增「设置搜索」页——展示当前版本，一键检查 npm 注册表上的最新版本；有更新时直接给出复制就用的 `dsh plugin update` 命令。
+- 🧭 **更新说明查看（v1.7.1）**：在「设置搜索」页「检查更新」旁新增「查看更新说明」按钮，可拉取 GitHub Release 更新内容并就地展示；拉取失败时自动跳转 Release 页面。
 - 🌐 **多语言支持**：内置中英文国际化，可跟随 DSH 本地化系统扩展。
 - 🎨 **主题适配**：完全使用 CSS 变量，自动跟随 DSH 主题（亮/暗）。
 - ⚡ **动态响应**：实时订阅设置项的新增/删除/变更，搜索结果自动刷新。
@@ -97,6 +98,12 @@ npm test   # 校验 host 半、dsh.client 清单、client bundle handoff
 > 历史说明：v1.1 及之前仓库曾附带 `dsh-settings-search.js`（会话内
 > `cordis_define` 动态插件源）。因与正式包代码长期双份维护漂移，已于 v1.4.1
 > 移除；如需动态用法可从 git 历史（tag `v1.4.0`）取回参考。
+
+## 反馈与贡献
+
+欢迎提交 **Issue** 反馈 Bug、功能建议或使用疑问：
+[GitHub Issues](https://github.com/objectivex666/dsh-settings-search/issues)，
+也欢迎直接发起 [Pull Request](https://github.com/objectivex666/dsh-settings-search/pulls)。
 
 ## 更新日志与发布
 

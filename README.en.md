@@ -21,6 +21,7 @@
 - 🧭 **Click-to-jump** — selecting a result clicks the matching left-nav entry to open its section; for tab options it also opens the tab and flashes the target row. A manual-path hint appears if automatic navigation is not possible.
 - 🌱 **Progressive indexing** — self-drawing settings rows are harvested from the rendered DOM (via their `[data-slot]` anchors) the first time their page is visited, then stay searchable.
 - 🛠 **Built-in settings page (v1.4.0)** — a "Settings Search" page in the left navigation shows the current version and checks npm for a newer release on demand; when one exists it hands you a copy-ready `dsh plugin update` command.
+- 🧭 **View release notes (v1.7.1)** — the "Settings Search" page has a "View changelog" button next to "Check for updates"; it fetches the GitHub release notes and shows them inline, opening the release page if fetching fails.
 - 🌐 **i18n** — built-in Chinese/English dictionaries that follow the DSH localization system and are easy to extend.
 - 🎨 **Theme-aware** — styled entirely with CSS variables, automatically following the DSH theme (light/dark).
 - ⚡ **Reactive** — subscribes to settings entries being added, removed, or changed, and refreshes results automatically.
@@ -96,6 +97,13 @@ npm test   # validates the host half, the dsh.client manifest, and the client bu
 > in-session `cordis_define` dynamic-plugin source). Because keeping it in
 > sync with the shipping package kept drifting silently, it was removed in
 > v1.4.1; retrieve it from git history (tag `v1.4.0`) if you need a reference.
+
+## Feedback & contributions
+
+Issues are welcome — please report bugs, suggest features, or ask questions in
+[GitHub Issues](https://github.com/objectivex666/dsh-settings-search/issues).
+Pull requests are equally welcome via
+[GitHub Pull Requests](https://github.com/objectivex666/dsh-settings-search/pulls).
 
 ## Changelog & releases
 
