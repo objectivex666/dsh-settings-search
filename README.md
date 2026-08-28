@@ -16,6 +16,8 @@
 - 📂 **页内选项搜索（v1.2.0）**：不只搜页面，还能直达每个设置页内部的具体选项——插件页的标签页（`settings.plugins.tab`）、Web UI 插件的卡片（`web-ui.plugin.item`）、通用设置行等，结果以「页面 › 选项」面包屑展示。
 - 🔤 **拼音联想搜索（v1.5.0）**：输入拼音首字母（如 `sz`）或全拼（如 `shezhi`）即可联想中文设置项；支持 `↑`/`↓` 选择、`Enter` 跳转、`Esc` 关闭，命中的文字自动高亮。
 - 🧠 **意图联想搜索（v1.6.0）**：直接描述想做的事（如「太亮了」「字太小」「忘记密码」），无需知道选项名即可联想真实设置项，结果在「猜你想找」分组展示。
+- 🤖 **AI 联想搜索（v1.7.0）**：没有本地匹配时，用你配置的模型（OpenAI 兼容或 Anthropic：Base URL / 模型名 / API Key）理解搜索意图并推荐设置项。默认关闭，可在「设置搜索」页开启并配置。
+- 🧾 **日志与导出（v1.7.0）**：记录插件运行、搜索与 AI 请求的关键动作，可在「设置搜索」页一键导出、复制或清空，便于排查问题。不会记录 API Key。
 - 🧭 **点击即达**：选中结果后自动点击对应的左侧导航项打开所在分区；若是页内标签页会继续点开对应标签，并高亮闪烁目标选项行。无法自动跳转时显示手动路径提示。
 - 🌱 **渐进索引**：自绘界面的设置行会在其所在页面首次被访问时从渲染 DOM 中收割标题并加入索引（此后始终可搜）。
 - 🛠 **自带设置页（v1.4.0）**：左侧导航新增「设置搜索」页——展示当前版本，一键检查 npm 注册表上的最新版本；有更新时直接给出复制就用的 `dsh plugin update` 命令。
@@ -95,3 +97,14 @@ npm test   # 校验 host 半、dsh.client 清单、client bundle handoff
 > 历史说明：v1.1 及之前仓库曾附带 `dsh-settings-search.js`（会话内
 > `cordis_define` 动态插件源）。因与正式包代码长期双份维护漂移，已于 v1.4.1
 > 移除；如需动态用法可从 git 历史（tag `v1.4.0`）取回参考。
+
+## 更新日志与发布
+
+每次版本更新需同时更新 GitHub Release 与 git tag，正文为双语，并写明「新功能」与「修复」：
+
+- 更新 [CHANGELOG.md](./CHANGELOG.md)（中文）与 [CHANGELOG.en.md](./CHANGELOG.en.md)（英文），两者各含 `### ✨ 新功能 / Features` 与 `### 🐛 修复 / Fixes`。
+- 同步 `package.json` 与 README 的版本号，按 `vX.Y.Z` 打 tag 并推送；GitHub Actions 会同时发布到 npm（`npm-publish.yml`）并创建双语 GitHub Release（`release.yml`）。
+- 本地预览 release 正文：`node scripts/release.mjs --version <ver>`
+- 实际打 tag 并发布：`node scripts/release.mjs --version <ver> --publish`（需 `gh` CLI 且已登录）
+
+> 未带 `--publish` 时脚本只校验并打印 release 正文，不会创建 tag、推送或发布。

@@ -1,0 +1,32 @@
+name: Create GitHub Release
+
+# 与 npm-publish.yml 共用 v* 标签：每次版本更新（tag）同时发布 npm 与 GitHub Release。
+# GitHub Release 正文来自 CHANGELOG.md / CHANGELOG.en.md 的对应版本段落，
+# 必须包含「新功能 / Features」与「修复 / Fixes」两节（中英文）。
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+
+      - name: Create bilingual GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/release.mjs --version "${GITHUB_REF_NAME#v}" --publish
