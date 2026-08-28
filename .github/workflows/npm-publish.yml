@@ -35,12 +35,14 @@ jobs:
 
       - name: Guard — published artifact must match declared version
         shell: bash
+        env:
+          EXPECTED_VERSION: ${{ github.event.inputs.expected_version }}
         run: |
           PKG_VERSION="$(node -p "require('./package.json').version")"
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             EXPECTED="${GITHUB_REF_NAME#v}"
           else
-            EXPECTED="${{ github.event.inputs.expected_version }}"
+            EXPECTED="$EXPECTED_VERSION"
           fi
           echo "trigger=${GITHUB_REF_TYPE} version=${PKG_VERSION} declared=${EXPECTED}"
           if [ "$PKG_VERSION" != "$EXPECTED" ]; then
@@ -54,7 +56,18 @@ jobs:
         run: |
           PKG_VERSION="$(node -p "require('./package.json').version")"
           NAME="$(node -p "require('./package.json').name")"
+          if ! [[ "$NAME" =~ ^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$ ]]; then
+            echo "::error::package.json name failed strict validation: $NAME"
+            exit 1
+          fi
+          if ! [[ "$PKG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::package.json version failed strict semver validation: $PKG_VERSION"
+            exit 1
+          fi
           LATEST=$(npm view "${NAME}" version 2>/dev/null || echo "0.0.0")
+          if ! [[ "$LATEST" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            LATEST="0.0.0"
+          fi
           node -e "
             const [nMaj,nMin,nPat] = process.argv[1].split('.').map(Number);
             const [pMaj,pMin,pPat] = process.argv[2].split('.').map(Number);
@@ -71,6 +84,14 @@ jobs:
         run: |
           NAME="$(node -p "require('./package.json').name")"
           VERSION="$(node -p "require('./package.json').version")"
+          if ! [[ "$NAME" =~ ^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$ ]]; then
+            echo "::error::package.json name failed strict validation: $NAME"
+            exit 1
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::package.json version failed strict semver validation: $VERSION"
+            exit 1
+          fi
           if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
             echo "${NAME}@${VERSION} already published — nothing to do"
