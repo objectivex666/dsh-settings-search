@@ -5,6 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@objectivex666/dsh-settings-search)](https://www.npmjs.com/package/@objectivex666/dsh-settings-search)
 [![license](https://img.shields.io/npm/l/@objectivex666/dsh-settings-search)](./LICENSE)
 [![node](https://img.shields.io/node/v/@objectivex666/dsh-settings-search)](https://nodejs.org)
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
 **中文** · [English](./README.en.md)
 
