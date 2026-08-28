@@ -105,6 +105,14 @@ npm test   # 校验 host 半、dsh.client 清单、client bundle handoff
 [GitHub Issues](https://github.com/objectivex666/dsh-settings-search/issues)，
 也欢迎直接发起 [Pull Request](https://github.com/objectivex666/dsh-settings-search/pulls)。
 
+提交 Issue 时，请尽量完整地提供以下信息，便于定位与复现：
+
+- **问题描述**：期望的行为与实际发生的情况。
+- **复现步骤**：一步步说明如何复现，包括触发关键词、所在设置页等。
+- **日志**：在「设置搜索」页的「日志与导出」中导出最近的搜索/运行日志并粘贴（API Key 不会被记录，可放心提供）；控制台报错也请一并附上。
+- **环境信息**：DSH 版本、Node.js 版本、插件版本（可在「设置搜索」页查看）、操作系统与浏览器。
+- **截图/录屏**：涉及界面表现时，附上截图或录屏更有帮助。
+
 ## 更新日志与发布
 
 每次版本更新需同时更新 GitHub Release 与 git tag，正文为双语，并写明「新功能」与「修复」：

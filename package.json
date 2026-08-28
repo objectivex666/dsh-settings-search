@@ -1,6 +1,6 @@
 {
   "name": "@objectivex666/dsh-settings-search",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "DSH settings panel search plugin – instantly filter setting sections and general items with navigation guidance. Installable via `dsh plugin add`.",
   "keywords": [
     "dsh",

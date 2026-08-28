@@ -2,6 +2,14 @@
 
 The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese version.
 
+## v1.7.2
+
+### ✨ Features
+- **Issue submission guide** — the README's "Feedback & contributions" section now asks reporters to include a problem description, reproduction steps, logs (exportable from the "Settings Search" page), environment details, and screenshots/recordings so issues are easier to locate and reproduce.
+
+### 🐛 Fixes
+- Documentation only; no functional fixes.
+
 ## v1.7.1
 
 ### ✨ Features

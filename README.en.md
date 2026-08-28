@@ -105,6 +105,14 @@ Issues are welcome — please report bugs, suggest features, or ask questions in
 Pull requests are equally welcome via
 [GitHub Pull Requests](https://github.com/objectivex666/dsh-settings-search/pulls).
 
+When submitting an issue, please include as much of the following as possible so we can locate and reproduce it:
+
+- **Problem description**: what you expected vs. what actually happened.
+- **Reproduction steps**: a step-by-step walkthrough, including the triggering keywords and the settings page involved.
+- **Logs**: export the recent search/runtime logs from the plugin's "Logging & export" page and paste them (API keys are never logged, so it is safe to share); include any console errors as well.
+- **Environment**: DSH version, Node.js version, plugin version (shown on the "Settings Search" page), OS, and browser.
+- **Screenshots / screen recording**: helpful for UI-related issues.
+
 ## Changelog & releases
 
 Every version bump keeps git tags and GitHub Releases in sync, with a bilingual body that lists both new features and fixes:
