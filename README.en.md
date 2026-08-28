@@ -14,6 +14,7 @@
 
 - 🔍 **Live search** — a search box at the top of the settings panel's left navigation filters every registered settings page (`settings.section`) and general item (`settings.general.item`) as you type.
 - 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), Web UI plugin cards (`web-ui.plugin.item`), general rows, and more, each shown with a "page › option" breadcrumb.
+- 🔤 **Pinyin association search (v1.5.0)** — type initials (`sz`) or full pinyin (`shezhi`) to surface Chinese settings items; navigate with `↑`/`↓`, confirm with `Enter`, dismiss with `Esc`, and matched text is highlighted.
 - 🧭 **Click-to-jump** — selecting a result clicks the matching left-nav entry to open its section; for tab options it also opens the tab and flashes the target row. A manual-path hint appears if automatic navigation is not possible.
 - 🌱 **Progressive indexing** — self-drawing settings rows are harvested from the rendered DOM (via their `[data-slot]` anchors) the first time their page is visited, then stay searchable.
 - 🛠 **Built-in settings page (v1.4.0)** — a "Settings Search" page in the left navigation shows the current version and checks npm for a newer release on demand; when one exists it hands you a copy-ready `dsh plugin update` command.
