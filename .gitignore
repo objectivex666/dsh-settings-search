@@ -1,0 +1,6 @@
+# Local DSH web runtime logs
+.dsh-web.err.log
+.dsh-web.out.log
+
+# Debug/probe bundle dumps (third-party DSH client bundles exported during testing)
+_probe_*.js
