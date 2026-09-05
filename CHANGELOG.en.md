@@ -2,6 +2,18 @@
 
 The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese version.
 
+## v1.9.0
+
+### ✨ Features
+- **Mixed search style** — a new “window top bar + popup page” layout opens the popup results page when the top-bar input is focused or typed into; press `Esc` to close the popup.
+- **Import DSH model config** — the AI API section can import the Base URL and model name from DSH's current default model and map it to OpenAI-compatible or Anthropic. It never reads, imports, or stores an API key.
+- **Updated onboarding** — the guide now covers all four search styles. The “Don't show again” button and manual onboarding button were removed; the guide appears automatically only on first use after installation.
+- **API-key storage hardening** — the AI API key now uses sessionStorage, and any legacy localStorage copy is removed automatically; the key only persists for the current browser session.
+
+### 🐛 Fixes
+- **Skin Center option labels** — searching for “启用皮肤中心” no longer merges conditional text such as “关闭后停用试穿、应用与背景控件，重新打开即恢复。” into the title. The description is stripped even when no punctuation precedes it.
+- **Release pipeline hardening** — the release helper now validates strict semantic versions; GitHub Actions checkout no longer persists Git credentials, and npm publish uses `--ignore-scripts`.
+
 ## v1.8.0
 
 ### ✨ Features

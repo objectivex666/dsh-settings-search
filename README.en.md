@@ -14,8 +14,10 @@
 
 ## Features
 
-- 🔍 **Live search** — a search box at the top of the settings panel's left navigation filters every registered settings page (`settings.section`) and general item (`settings.general.item`) as you type.
-- 🎯 **First-run onboarding (v1.8.0)** — a welcome modal introduces live search, pinyin/intent/AI hints, click-to-jump, and auto-indexing when the settings panel first opens; reopen it anytime from the "Settings Search" page.
+- 🔍 **Live search** — a search box in the settings panel filters every registered settings page (`settings.section`) and general item (`settings.general.item`) as you type.
+- 🧩 **Four search styles (v1.9.0)** — choose the classic sidebar, window top bar, popup search page, or a mixed window top bar plus popup page layout. The choice is saved in the current browser.
+- 🤝 **Import DSH model config (v1.9.0)** — import the Base URL and model name from DSH's current default model in the AI config section. For credential safety, the API key is never imported.
+- 🎯 **First-run onboarding (v1.9.0)** — a welcome modal appears only the first time the settings panel opens after installation. It introduces the four search styles, pinyin/intent/AI hints, click-to-jump, and auto-indexing; there are no "Don't show again" or manual reopen buttons.
 - 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), Web UI plugin cards (`web-ui.plugin.item`), general rows, and more, each shown with a "page › option" breadcrumb.
 - 🔤 **Pinyin association search (v1.5.0)** — type initials (`sz`) or full pinyin (`shezhi`) to surface Chinese settings items; navigate with `↑`/`↓`, confirm with `Enter`, dismiss with `Esc`, and matched text is highlighted.
 - 🧠 **Intent search (v1.6.0)** — describe the goal in Chinese (e.g. 「太亮了」 "too bright", 「字太小」 "text too small") to surface matching settings without knowing their names, shown in a "You may want" group.

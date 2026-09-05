@@ -29,11 +29,16 @@ function arg(name) {
 const version = process.argv.includes('--version') ? arg('--version') : undefined
 const publish = process.argv.includes('--publish')
 const dryRun = process.argv.includes('--dry-run')
+const VERSION_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/
 
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
 const target = version ?? pkg.version
 if (pkg.version !== target) {
   console.error(`version mismatch: package.json=${pkg.version}, requested=${target}`)
+  process.exit(1)
+}
+if (!VERSION_RE.test(target)) {
+  console.error(`invalid semantic version: ${target}`)
   process.exit(1)
 }
 const tag = `v${target}`
