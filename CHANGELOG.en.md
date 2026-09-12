@@ -10,7 +10,6 @@ The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese v
 ## v1.9.0
 
 ### ✨ Features
-- **Mixed search style** — a new “window top bar + popup page” layout opens the popup results page when the top-bar input is focused or typed into; press `Esc` to close the popup.
 - **Import DSH model config** — the AI API section can import the Base URL and model name from DSH's current default model and map it to OpenAI-compatible or Anthropic. It never reads, imports, or stores an API key.
 - **Updated onboarding** — the guide now covers all four search styles. The “Don't show again” button and manual onboarding button were removed; the guide appears automatically only on first use after installation.
 - **API-key storage hardening** — the AI API key now uses sessionStorage, and any legacy localStorage copy is removed automatically; the key only persists for the current browser session.

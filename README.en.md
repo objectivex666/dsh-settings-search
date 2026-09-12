@@ -15,7 +15,7 @@
 ## Features
 
 - 🔍 **Live search** — a search box in the settings panel filters every registered settings page (`settings.section`) and general item (`settings.general.item`) as you type.
-- 🧩 **Four search styles (v1.9.0)** — choose the classic sidebar, window top bar, popup search page, or a mixed window top bar plus popup page layout. The choice is saved in the current browser.
+- 🧩 **Three search styles** — choose the classic sidebar, window top bar, or popup search page. The choice is saved in the current browser.
 - ⌨️ **Search shortcut (v1.10.0)** — focus the search box with `Ctrl+F` or `⌘F` inside the settings panel. You can enable or disable it from the "Settings Search" page; disabling keeps the browser's default find behavior.
 - 🤝 **Import DSH model config (v1.9.0)** — import the Base URL and model name from DSH's current default model in the AI config section. For credential safety, the API key is never imported.
 - 🎯 **First-run onboarding (v1.9.0)** — a welcome modal appears only the first time the settings panel opens after installation. It introduces the four search styles, pinyin/intent/AI hints, click-to-jump, and auto-indexing; there are no "Don't show again" or manual reopen buttons.
