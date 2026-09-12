@@ -7,6 +7,9 @@ The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese v
 ### ✨ Features
 - **Search shortcut** — focus the search box with `Ctrl+F` or `⌘F` inside the settings panel; the popup-page style opens that page directly. You can enable or disable it from the "Settings Search" page, and disabling keeps the browser's default find behavior.
 
+### 🐛 Fixes
+- **Remove mixed search style** — removed the “top bar + popup page” mode and its duplicate-window rendering path, leaving three stable layouts: classic sidebar, top bar, and popup search page.
+
 ## v1.9.0
 
 ### ✨ Features
