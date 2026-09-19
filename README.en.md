@@ -84,7 +84,7 @@ The package ships its own `cordis.patch.yml` (that exact content), which `dsh pl
 
 ---
 
-## Local Ollama
+## Local Ollama (v1.11.0)
 
 Enable "AI-assisted search" on the Settings Search page and select "Ollama (local)" as the API type:
 

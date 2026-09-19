@@ -84,7 +84,7 @@ dsh plugin --profile web add /path/to/dsh-settings-search
 
 ---
 
-## 本机 Ollama
+## 本机 Ollama（v1.11.0）
 
 在「设置搜索」页开启「AI 联想搜索」，将「接口类型」选为「Ollama（本机）」：
 

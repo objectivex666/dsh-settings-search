@@ -2,6 +2,16 @@
 
 The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese version.
 
+## v1.11.0
+
+### Features
+- **Local Ollama**: AI-assisted search now offers an "Ollama (local)" API type, defaulting to `http://127.0.0.1:11434`. Uses the native chat API without an API key and never sends an existing cloud API key.
+- **Ollama configuration and testing**: save a model name and custom URL, import DSH's Ollama configuration, and check connectivity with "Test API". Requests allow 120 seconds and report local-service and cross-origin errors. The plugin does not start Ollama or download models.
+
+### Fixes
+- **Switching AI configuration**: cache entries are scoped by API type, URL, model, and settings index; configuration changes clear old results. Switching API types within the settings page preserves URL and model drafts.
+- **Cancellation and timeouts**: timed-out and cancelled searches abort the underlying request. Editing configuration or leaving the settings page cancels the connectivity test so stale results cannot overwrite the current configuration.
+
 ## v1.10.0
 
 ### ✨ Features
