@@ -22,7 +22,7 @@
 - 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), Web UI plugin cards (`web-ui.plugin.item`), general rows, and more, each shown with a "page › option" breadcrumb.
 - 🔤 **Pinyin association search (v1.5.0)** — type initials (`sz`) or full pinyin (`shezhi`) to surface Chinese settings items; navigate with `↑`/`↓`, confirm with `Enter`, dismiss with `Esc`, and matched text is highlighted.
 - 🧠 **Intent search (v1.6.0)** — describe the goal in Chinese (e.g. 「太亮了」 "too bright", 「字太小」 "text too small") to surface matching settings without knowing their names, shown in a "You may want" group.
-- 🤖 **AI-assisted search (v1.7.0)** — when nothing matches locally, your own model (OpenAI-compatible or Anthropic: Base URL / model / API key) understands your search intent and suggests settings. Off by default; configure it on the plugin's settings page.
+- 🤖 **AI-assisted search** — when nothing matches locally, your OpenAI-compatible, Anthropic, or local Ollama model understands your search intent and suggests settings. Off by default; configure it on the plugin's settings page. Ollama needs no API key.
 - 🧾 **Logging & export (v1.7.0)** — records key plugin actions, searches, and AI requests; export, copy, or clear them from the plugin's settings page for troubleshooting. API keys are never logged.
 - 🧭 **Click-to-jump** — selecting a result clicks the matching left-nav entry to open its section; for tab options it also opens the tab and flashes the target row. A manual-path hint appears if automatic navigation is not possible.
 - 🌱 **Auto-index on startup (v1.8.0)** — the first time the settings panel opens, the plugin automatically visits every settings section, silently reads in-page options (e.g. "Enable Workshop card") into the search index, then restores your current section, so all section options are searchable without having to open each page manually. A "Importing section options…" hint shows under the search box and clears when done.
@@ -84,6 +84,22 @@ The package ships its own `cordis.patch.yml` (that exact content), which `dsh pl
 
 ---
 
+## Local Ollama
+
+Enable "AI-assisted search" on the Settings Search page and select "Ollama (local)" as the API type:
+
+- **Base URL**: defaults to `http://127.0.0.1:11434`; custom ports are supported. Accepts the root URL, `/api`, `/api/chat`, or `/v1`.
+- **Model**: enter the full name, including its tag, of an installed model. Use `ollama list` to see installed models.
+- **API key**: not required. Ollama requests never send an existing cloud API key.
+
+Save the configuration and use "Test API" to check connectivity. Ollama requests allow 120 seconds for cold starts; cancelling a search aborts the request.
+
+The plugin does not install or start Ollama, or download models. Prepare a running Ollama service and model yourself. Requests originate in the browser, so "local" means the browser's device, not a remote DSH server.
+
+For connection failures, check the service URL. For cross-origin failures, add the exact DSH page origin (for example `http://127.0.0.1:3080`) to Ollama's `OLLAMA_ORIGINS` and restart Ollama. Avoid unnecessary wildcard origins. Non-local URLs still require HTTPS.
+
+---
+
 ## Package layout
 
 ```
@@ -91,12 +107,13 @@ lib/index.js        Host half (no-op — makes the package a valid Cordis plugin
 lib/client.js       Browser half (search UI, __ModuleLoader__ format)
 cordis.patch.yml    Composition patch: inserts the settings-search plugin row
 scripts/check.mjs   Structural self-checks (npm test)
+scripts/ai.test.mjs Mock AI regression tests (no model execution)
 ```
 
 ## Development
 
 ```bash
-npm test   # validates the host half, the dsh.client manifest, and the client bundle handoff
+npm test   # structural checks and mocked Ollama / OpenAI / Anthropic regression tests
 ```
 
 > Historical note: up to v1.1 the repo shipped `dsh-settings-search.js` (an

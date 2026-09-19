@@ -55,7 +55,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node scripts/check.mjs"
+    "test": "node scripts/check.mjs && node --test scripts/ai.test.mjs"
   },
   "publishConfig": {
     "access": "public"
