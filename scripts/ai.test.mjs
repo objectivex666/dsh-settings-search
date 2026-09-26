@@ -11,6 +11,8 @@ const instrumented = source.replace(hook, `
     Object.assign(exports, {
       aiConfig, setAiConfig, aiConfigReady, ollamaChatUrl,
       requestUserAi, requestAiKeywords, testAiService, LOGS,
+      modelsUrl, fetchAiModels,
+      readIndexCache, serializeHarvest,
     })
 ${hook}`)
 const storage = () => {
@@ -30,6 +32,8 @@ const plain = (value) => JSON.parse(JSON.stringify(value))
 const ollama = { provider: 'ollama', baseUrl: '', model: 'local-model:7b', apiKey: '' }
 const openai = { provider: 'openai', baseUrl: 'https://example.test/v1', model: 'cloud-model', apiKey: 'test-secret' }
 const anthropic = { ...openai, provider: 'anthropic', baseUrl: 'https://example.test' }
+const modelHook = '      const model = createModel(ctx)'
+
 const reply = (provider, content = '{"keywords":["Language"]}') => provider === 'ollama'
   ? { message: { role: 'assistant', content }, done: true }
   : provider === 'anthropic'
@@ -49,15 +53,72 @@ function load(fetchImpl = async () => json(reply('ollama'))) {
     setTimeout,
     clearTimeout,
     fetch: async (url, options) => {
-      const call = { url, ...options, body: JSON.parse(options.body) }
+      const call = { url, ...options, body: options.body ? JSON.parse(options.body) : undefined }
       calls.push(call)
       return fetchImpl(call)
     },
   }
-  vm.runInNewContext(instrumented, sandbox, { filename: 'lib/client.js' })
-  const api = handoff.factory(() => ({}))
+  const instrumentedModel = instrumented.replace(modelHook, modelHook + '\n    exports.__indexTestModel = model')
+  vm.runInNewContext(instrumentedModel, sandbox, { filename: 'lib/client.js' })
+  const api = handoff.factory(() => ({ createElement: () => null }))
   return { api, calls, sandbox }
 }
+
+test('persistent settings index reuses matching fingerprints and drops invalid rows', () => {
+  const { api, sandbox } = load()
+  const records = {
+    'settings.general.item': {
+      row1: { title: 'Enable Workshop card', idx: 1, text: 'Enable Workshop card and save.', inner: [] },
+      broken: { idx: 2 },
+    },
+  }
+  assert.equal(Object.keys(api.serializeHarvest(new Map())).length, 0)
+  sandbox.localStorage.setItem('dsh-settings-search:index:v1', JSON.stringify({
+    version: 1,
+    fingerprint: 'manager:test',
+    updatedAt: 1,
+    harvest: records,
+  }))
+  const cached = api.readIndexCache()
+  assert.equal(cached.fingerprint, 'manager:test')
+  assert.equal(cached.harvest.get('settings.general.item')?.get('row1')?.title, 'Enable Workshop card')
+  assert.equal(cached.harvest.get('settings.general.item')?.has('broken'), false)
+
+  const ctx = {
+    effect: (fn) => fn(),
+    get: () => null,
+    inject: () => {},
+    locale: {
+      register: () => {},
+      bind: () => () => '',
+      subscribe: () => () => {},
+    },
+    slots: {
+      register: (name, id, options) => ({ name, id, options }),
+      inject: (_slot, registrar) => registrar(),
+      entries: (slot) => slot === 'settings.general.item'
+        ? [{ options: { id: 'row1', order: 1 } }]
+        : [],
+      subscribe: () => () => {},
+    },
+  }
+  api.apply(ctx)
+  const model = api.__indexTestModel
+  assert.equal(model.indexFingerprintReady(), true)
+  assert.equal(model.applyIndexFingerprint('manager:test'), false)
+  assert.ok(model.readDeep().some((item) => item.label === 'Enable Workshop card'))
+  assert.equal(model.applyIndexFingerprint('manager:changed'), true)
+  assert.equal(model.readDeep().some((item) => item.label === 'Enable Workshop card'), false)
+  assert.equal(model.persistIndex('manager:changed'), false)
+})
+
+test('readIndexCache rejects malformed persisted index payloads', () => {
+  const { api, sandbox } = load()
+  for (const value of ['{', '{"version":1}', 'null']) {
+    sandbox.localStorage.setItem('dsh-settings-search:index:v1', value)
+    assert.equal(api.readIndexCache(), null)
+  }
+})
 
 test('Ollama configuration persists and requires a model but no key', () => {
   const { api, sandbox } = load()
@@ -86,6 +147,59 @@ test('Ollama accepts root, native, compatibility, proxy and IPv6 base URLs', () 
   }
   assert.equal(api.ollamaChatUrl('http://[::1]:11434/'), 'http://[::1]:11434/api/chat')
   assert.equal(api.ollamaChatUrl('https://example.test/ollama/v1/'), 'https://example.test/ollama/api/chat')
+})
+
+test('users discover selectable models from each supported API type', async () => {
+  const cases = [
+    {
+      cfg: ollama,
+      payload: { models: [{ name: 'qwen3:8b' }, { name: 'llama3.1:8b' }, { name: 'qwen3:8b' }] },
+      url: 'http://127.0.0.1:11434/api/tags',
+      headers: {},
+      models: ['qwen3:8b', 'llama3.1:8b'],
+    },
+    {
+      cfg: openai,
+      payload: { data: [{ id: 'gpt-4o-mini' }, { id: 'gpt-4.1-mini' }] },
+      url: 'https://example.test/v1/models',
+      headers: { authorization: `Bearer ${openai.apiKey}` },
+      models: ['gpt-4o-mini', 'gpt-4.1-mini'],
+    },
+    {
+      cfg: anthropic,
+      payload: { data: [{ id: 'claude-sonnet-4-20250514' }] },
+      url: 'https://example.test/v1/models',
+      headers: {
+        'x-api-key': anthropic.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      models: ['claude-sonnet-4-20250514'],
+    },
+  ]
+  for (const expected of cases) {
+    const { api, calls } = load(async () => json(expected.payload))
+    assert.deepEqual(plain(await api.fetchAiModels(expected.cfg)), { ok: true, models: expected.models, code: 'ok', detail: '' })
+    const [call] = calls
+    assert.equal(call.url, expected.url)
+    assert.equal(call.method, 'GET')
+    assert.equal(call.redirect, 'error')
+    assert.deepEqual(plain(call.headers), expected.headers)
+  }
+})
+
+test('model discovery rejects unsafe or incomplete sources before fetching', async () => {
+  const { api, calls } = load(async () => json({ data: [{ id: 'should-not-load' }] }))
+  assert.equal(api.modelsUrl('ollama', 'javascript:alert(1)'), '')
+  assert.deepEqual(plain(await api.fetchAiModels({ ...ollama, baseUrl: 'file:///models' })), { ok: false, code: 'unsafe-url', models: [], detail: '' })
+  assert.deepEqual(plain(await api.fetchAiModels({ ...openai, apiKey: '' })), { ok: false, code: 'need-config', models: [], detail: '' })
+  assert.equal(calls.length, 0)
+})
+
+test('model discovery reports provider failures without inventing choices', async () => {
+  const { api, calls } = load(async () => json({ error: 'denied' }, 401))
+  assert.deepEqual(plain(await api.fetchAiModels(ollama)), { ok: false, code: 'auth', models: [], detail: 'HTTP 401' })
+  assert.equal(calls.length, 1)
 })
 
 test('Ollama search uses native non-streaming JSON and never sends a stored cloud key', async () => {

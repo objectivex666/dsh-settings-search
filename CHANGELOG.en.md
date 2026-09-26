@@ -80,3 +80,13 @@ The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese v
 ---
 
 _Keep this file bilingual going forward; update CHANGELOG.md with the Chinese text as well._
+## v1.12.0
+
+### Features
+- **Persistent settings index** — the first harvested settings index is stored locally. It rebuilds only on first use or after another plugin is installed or updated, and can be rebuilt manually from the Settings Search page.
+- **Model selection** — the AI configuration can fetch models from Ollama, OpenAI-compatible, and Anthropic APIs; complete manual model names are still supported.
+- **Quick links** — the Settings Search page links to the GitHub repository and issue chooser.
+
+### Fixes
+- **Popup layering** — the popup search overlay now uses z-index 1000 so host UI cannot cover it.
+- **Model list reliability** — model list requests time out after 12 seconds, reject redirects, and clear stale lists when configuration changes.

@@ -23,6 +23,7 @@
 - 🔤 **Pinyin association search (v1.5.0)** — type initials (`sz`) or full pinyin (`shezhi`) to surface Chinese settings items; navigate with `↑`/`↓`, confirm with `Enter`, dismiss with `Esc`, and matched text is highlighted.
 - 🧠 **Intent search (v1.6.0)** — describe the goal in Chinese (e.g. 「太亮了」 "too bright", 「字太小」 "text too small") to surface matching settings without knowing their names, shown in a "You may want" group.
 - 🤖 **AI-assisted search** — when nothing matches locally, your OpenAI-compatible, Anthropic, or local Ollama model understands your search intent and suggests settings. Off by default; configure it on the plugin's settings page. Ollama needs no API key.
+- 💾 **Persistent settings index (v1.12.0)** — the first harvested settings index is stored locally. It rebuilds only on first use or after another plugin is installed or updated, and can be rebuilt manually from the Settings Search page.
 - 🧾 **Logging & export (v1.7.0)** — records key plugin actions, searches, and AI requests; export, copy, or clear them from the plugin's settings page for troubleshooting. API keys are never logged.
 - 🧭 **Click-to-jump** — selecting a result clicks the matching left-nav entry to open its section; for tab options it also opens the tab and flashes the target row. A manual-path hint appears if automatic navigation is not possible.
 - 🌱 **Auto-index on startup (v1.8.0)** — the first time the settings panel opens, the plugin automatically visits every settings section, silently reads in-page options (e.g. "Enable Workshop card") into the search index, then restores your current section, so all section options are searchable without having to open each page manually. A "Importing section options…" hint shows under the search box and clears when done.
@@ -89,7 +90,7 @@ The package ships its own `cordis.patch.yml` (that exact content), which `dsh pl
 Enable "AI-assisted search" on the Settings Search page and select "Ollama (local)" as the API type:
 
 - **Base URL**: defaults to `http://127.0.0.1:11434`; custom ports are supported. Accepts the root URL, `/api`, `/api/chat`, or `/v1`.
-- **Model**: enter the full name, including its tag, of an installed model. Use `ollama list` to see installed models.
+- **Model**: choose one returned by "Get models", or enter the full name, including its tag, of an installed model. Use `ollama list` to see installed models.
 - **API key**: not required. Ollama requests never send an existing cloud API key.
 
 Save the configuration and use "Test API" to check connectivity. Ollama requests allow 120 seconds for cold starts; cancelling a search aborts the request.
