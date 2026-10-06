@@ -19,12 +19,12 @@
 - ⌨️ **Search shortcut (v1.10.0)** — focus the search box with `Ctrl+F` or `⌘F` inside the settings panel. You can enable or disable it from the "Settings Search" page; disabling keeps the browser's default find behavior.
 - 🤝 **Import DSH model config (v1.9.0)** — import the Base URL and model name from DSH's current default model in the AI config section. For credential safety, the API key is never imported.
 - 🎯 **First-run onboarding (v1.9.0)** — a welcome modal appears only the first time the settings panel opens after installation. It introduces the four search styles, pinyin/intent/AI hints, click-to-jump, and auto-indexing; there are no "Don't show again" or manual reopen buttons.
-- 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), Web UI plugin cards (`web-ui.plugin.item`), general rows, and more, each shown with a "page › option" breadcrumb.
+- 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), the pre-0.2 plugin-card seats (`settings.plugin.item` / `web-ui.plugin.item`, both gone in 0.2), general rows, and more, each shown with a "page › option" breadcrumb.
 - 🔤 **Pinyin association search (v1.5.0)** — type initials (`sz`) or full pinyin (`shezhi`) to surface Chinese settings items; navigate with `↑`/`↓`, confirm with `Enter`, dismiss with `Esc`, and matched text is highlighted.
 - 🧠 **Intent search (v1.6.0)** — describe the goal in Chinese (e.g. 「太亮了」 "too bright", 「字太小」 "text too small") to surface matching settings without knowing their names, shown in a "You may want" group.
 - 🤖 **AI-assisted search** — when nothing matches locally, your OpenAI-compatible, Anthropic, or local Ollama model understands your search intent and suggests settings. Off by default; configure it on the plugin's settings page. Ollama needs no API key.
 - 💾 **Persistent settings index (v1.12.0)** — the first harvested settings index is stored locally. It rebuilds only on first use or after another plugin is installed or updated, and can be rebuilt manually from the Settings Search page.
-- 🧾 **Logging & export (v1.7.0)** — records key plugin actions, searches, and AI requests; export, copy, or clear them from the plugin's settings page for troubleshooting. API keys are never logged.
+- 🧾 **Logging & viewing (v1.13.0 / v1.7.0)** — records key plugin actions, searches, and AI requests. Logs are written per local day as `$DSH_HOME/logs/dsh-settings-search/settings-search-YYYY-MM-DD.log`: one dated file per day, capped at 100 MB (the day then continues in numbered parts, `.1`, `.2`, …), with the whole folder held at 100 MB by deleting the oldest files — never the one being written. The plugin's page can **view logs**, **open the log folder**, copy, export, or clear them; the badge beside the "Logs" title counts today's file. API keys are never logged.
 - 🧭 **Click-to-jump** — selecting a result clicks the matching left-nav entry to open its section; for tab options it also opens the tab and flashes the target row. A manual-path hint appears if automatic navigation is not possible.
 - 🌱 **Auto-index on startup (v1.8.0)** — the first time the settings panel opens, the plugin automatically visits every settings section, silently reads in-page options (e.g. "Enable Workshop card") into the search index, then restores your current section, so all section options are searchable without having to open each page manually. A "Importing section options…" hint shows under the search box and clears when done.
 - 🛠 **Built-in settings page (v1.4.0)** — a "Settings Search" page in the left navigation shows the current version and checks npm for a newer release on demand; when one exists it hands you a copy-ready `dsh plugin update` command.
@@ -41,7 +41,7 @@ This plugin is a standard **DSH profile bundle**: once installed it wires itself
 
 ### Prerequisites
 
-- **DeepSeek Harness (DSH)** — any release that ships the web UI (`dsh web`).
+- **DeepSeek Harness (DSH)** — DSH 0.2 stable (desktop and `dsh web`) and earlier 0.1 builds; the plugin picks the API the running release offers.
 - **Node.js** >= 18 (LTS recommended).
 
 ### From npm (recommended)
@@ -104,11 +104,12 @@ For connection failures, check the service URL. For cross-origin failures, add t
 ## Package layout
 
 ```
-lib/index.js        Host half (no-op — makes the package a valid Cordis plugin row)
+lib/index.js        Host half (log file + the `/api/settings-search-log` route)
 lib/client.js       Browser half (search UI, __ModuleLoader__ format)
 cordis.patch.yml    Composition patch: inserts the settings-search plugin row
 scripts/check.mjs   Structural self-checks (npm test)
-scripts/ai.test.mjs Mock AI regression tests (no model execution)
+scripts/ai.test.mjs Mock AI and settings-index regression tests (no model execution)
+scripts/log.test.mjs Host log file and route regression tests (temp dirs; never your own log folder)
 ```
 
 ## Development

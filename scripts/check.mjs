@@ -60,6 +60,34 @@ check(versionMatch !== null, 'lib/client.js must define const PKG_VERSION')
 check(versionMatch?.[1] === pkg.version,
   `PKG_VERSION (${versionMatch?.[1]}) must equal package.json version (${pkg.version})`)
 
+// 5. theme variables: every token the bundle styles with must exist in the DSH
+//    0.2 theme registry (verified against @deepseek-ai/dsh-client-ui-theme).
+//    A token that 0.2 never defines silently falls back to the inherited value.
+const VERIFIED_THEME_TOKENS = new Set([
+  '--dsw-alias-bg-layer-1',
+  '--dsw-alias-bg-layer-2',
+  '--dsw-alias-bg-layer-3',
+  '--dsw-alias-bg-mask-1',
+  '--dsw-alias-bg-module-platform',
+  '--dsw-alias-bg-overlay',
+  '--dsw-alias-border-l1',
+  '--dsw-alias-border-l2',
+  '--dsw-alias-brand-primary',
+  '--dsw-alias-interactive-bg-hover',
+  '--dsw-alias-label-dimmed',
+  '--dsw-alias-label-primary',
+  '--dsw-alias-label-secondary',
+  '--dsw-alias-label-tertiary',
+  '--dsw-alias-state-error-primary',
+  '--dsw-alias-state-success-primary',
+  '--dsw-shadow-lv2',
+  '--dsw-shadow-lv3',
+])
+for (const token of new Set([...source.matchAll(/--dsw-[a-z0-9-]+/g)].map((match) => match[0]))) {
+  check(VERIFIED_THEME_TOKENS.has(token),
+    `lib/client.js uses ${token}, which the DSH 0.2 theme does not define`)
+}
+
 if (failed > 0) {
   console.error(`${failed} check(s) failed`)
   process.exit(1)

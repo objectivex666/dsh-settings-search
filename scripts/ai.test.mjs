@@ -13,6 +13,8 @@ const instrumented = source.replace(hook, `
       requestUserAi, requestAiKeywords, testAiService, LOGS,
       modelsUrl, fetchAiModels,
       readIndexCache, serializeHarvest,
+      readDshModelConfig, otherPluginFingerprint, DEEP_SLOTS,
+      log, flushLogs, discardPendingLogs, sessionLogText, logTarget, readLogCount,
     })
 ${hook}`)
 const storage = () => {
@@ -321,13 +323,17 @@ for (const cfg of [ollama, openai, anthropic]) {
     const { api, sandbox, calls } = load(abortedFetch)
     let expire
     let cleared = false
+    const deadline = cfg.provider === 'ollama' ? 120000 : 12000
+    const delays = []
     sandbox.setTimeout = (callback, ms) => {
-      assert.equal(ms, cfg.provider === 'ollama' ? 120000 : 12000)
-      expire = callback
+      delays.push(ms)
+      // The log batch timer shares this seam, so select the request deadline.
+      if (ms === deadline) expire = callback
       return 1
     }
     sandbox.clearTimeout = () => { cleared = true }
     const result = api.testAiService(cfg)
+    assert.ok(delays.includes(deadline), `the request must use a ${deadline}ms deadline, saw ${delays.join('/')}`)
     expire()
     assert.equal((await result).code, 'timeout')
     assert.equal(calls[0].signal.aborted, true)
@@ -376,4 +382,269 @@ test('cache respects settings labels and is invalidated when provider configurat
   await api.requestAiKeywords('intent', 'Language')
   assert.equal(calls.length, 4)
   assert.equal(calls[3].headers.authorization, `Bearer ${openai.apiKey}`)
+})
+
+// --- DSH default-model import: 0.2 Remote namespaces, the legacy unary client, and failures ---
+
+const dshNamespaces = (provider, model, providerProfiles) => ([
+  { ns: 'agent-default-model', value: { provider, model, reasoningEffort: 'high' } },
+  { ns: 'llm-pi-ai', value: { providers: providerProfiles } },
+])
+const describeReply = (namespaces) => ({ ok: true, value: { writable: true, hasDocument: true, namespaces } })
+
+test('DSH 0.2 remote namespaces supply the default model config without touching credentials', async () => {
+  const { api } = load()
+  const requested = []
+  const ctx = {
+    get: (name) => {
+      requested.push(name)
+      if (name === 'remote.settings') {
+        return {
+          describe: async () => describeReply(dshNamespaces('openai', 'gpt-x', {
+            openai: { api: 'openai-completions', baseURL: 'https://example.test/v1', models: [{ id: 'gpt-x' }] },
+          })),
+        }
+      }
+      if (name === 'remote.llm') {
+        return {
+          listConfigurableProviders: async () => ({
+            ok: true,
+            value: [{ provider: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'] }],
+          }),
+        }
+      }
+      return undefined
+    },
+  }
+  assert.deepEqual(plain(await api.readDshModelConfig(ctx, (key) => key)), {
+    provider: 'openai',
+    baseUrl: 'https://example.test/v1',
+    model: 'gpt-x',
+  })
+  assert.deepEqual(requested, ['remote.settings', 'remote.llm'])
+})
+
+test('the legacy connection.api unary client still supplies the default model config', async () => {
+  const { api } = load()
+  const ctx = {
+    get: (name) => name === 'connection'
+      ? {
+          api: {
+            settings: {
+              describe: async (payload) => {
+                assert.deepEqual(plain(payload), {})
+                return {
+                  result: {
+                    ok: true,
+                    value: {
+                      namespaces: dshNamespaces('anthropic', 'claude-x', {
+                        anthropic: { baseURL: 'https://anthropic.test', models: [{ id: 'claude-x', api: 'anthropic-messages' }] },
+                      }),
+                    },
+                  },
+                }
+              },
+            },
+            llm: {
+              providers: async () => ({
+                result: {
+                  ok: true,
+                  value: { providers: [{ provider: 'anthropic', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'anthropic'] }] },
+                },
+              }),
+            },
+          },
+        }
+      : undefined,
+  }
+  assert.deepEqual(plain(await api.readDshModelConfig(ctx, (key) => key)), {
+    provider: 'anthropic',
+    baseUrl: 'https://anthropic.test',
+    model: 'claude-x',
+  })
+})
+
+test('a missing llm namespace falls back to the provider profile inside the settings namespace', async () => {
+  const { api } = load()
+  const ctx = {
+    get: (name) => name === 'remote.settings'
+      ? {
+          describe: async () => describeReply(dshNamespaces('ollama', 'qwen3:8b', {
+            ollama: { baseURL: 'http://127.0.0.1:11434/v1', models: [{ id: 'qwen3:8b' }] },
+          })),
+        }
+      : undefined,
+  }
+  assert.deepEqual(plain(await api.readDshModelConfig(ctx, (key) => key)), {
+    provider: 'ollama',
+    baseUrl: 'http://127.0.0.1:11434/v1',
+    model: 'qwen3:8b',
+  })
+})
+
+test('a failed describe is reported instead of being mistaken for a missing model', async () => {
+  const { api } = load()
+  const ctx = {
+    get: (name) => name === 'remote.settings'
+      ? { describe: async () => ({ ok: false, error: { message: 'settings are read-only' } }) }
+      : undefined,
+  }
+  await assert.rejects(api.readDshModelConfig(ctx, (key) => key), { message: 'settings are read-only' })
+})
+
+test('a DSH build with no settings API fails with a readable reason instead of a TypeError', async () => {
+  const { api } = load()
+  await assert.rejects(api.readDshModelConfig({ get: () => undefined }, (key) => key), { message: 'aiDshImportApi' })
+})
+
+test('a default model without an importable Base URL names the model, and no default model imports nothing', async () => {
+  const { api } = load()
+  const account = {
+    get: (name) => name === 'remote.settings'
+      ? {
+          describe: async () => describeReply([
+            { ns: 'agent-default-model', value: { provider: 'deepseek-account', model: 'deepseek-flash' } },
+          ]),
+        }
+      : name === 'remote.llm'
+        ? {
+            listConfigurableProviders: async () => ({
+              ok: true,
+              value: [{ provider: 'deepseek-account', settingsNs: 'llm-deepseek-account', settingsPath: [] }],
+            }),
+          }
+        : undefined,
+  }
+  await assert.rejects(api.readDshModelConfig(account, (key) => key), { message: 'aiDshImportNoBaseUrl' })
+
+  const idle = {
+    get: (name) => name === 'remote.settings'
+      ? { describe: async () => describeReply([{ ns: 'agent-default-model', value: {} }]) }
+      : undefined,
+  }
+  assert.equal(await api.readDshModelConfig(idle, (key) => key), null)
+})
+
+// --- DSH 0.2 adaptation: plugin-inventory fingerprint and in-page seats ---
+
+test('the plugin-inventory fingerprint drops this plugin and follows 0.2 bundle/plugin rows', () => {
+  const { api } = load()
+  const own = { id: '@objectivex666/dsh-settings-search', npm: '@objectivex666/dsh-settings-search', version: '1.13.0' }
+  const shell = { id: '@deepseek-ai/dsh-client-ui-shell', npm: '@deepseek-ai/dsh-client-ui-shell', version: '0.2.0-rc.2', enabled: true }
+  const baseline = api.otherPluginFingerprint([own, shell])
+  assert.equal(api.otherPluginFingerprint([shell]), baseline, 'this plugin must not affect its own index fingerprint')
+  assert.notEqual(api.otherPluginFingerprint([own, { ...shell, version: '0.2.1' }]), baseline, 'a plugin update must invalidate')
+  assert.notEqual(api.otherPluginFingerprint([own, { ...shell, enabled: false }]), baseline, 'a plugin toggle must invalidate')
+  assert.notEqual(api.otherPluginFingerprint([own]), baseline, 'a plugin removal must invalidate')
+  assert.equal(api.otherPluginFingerprint([]), api.otherPluginFingerprint([own]))
+  // 0.2 plugin rows carry entryId/moduleName rather than id/name.
+  assert.notEqual(
+    api.otherPluginFingerprint([own, { id: 'ui-theme', npm: '@deepseek-ai/dsh-client-ui-theme', enabled: true }]),
+    baseline,
+  )
+})
+
+test('legacy plugin-card seats stay indexed for pre-0.2 builds only', () => {
+  const { api } = load()
+  const seats = Object.fromEntries(api.DEEP_SLOTS.map((config) => [config.slot, config.parent]))
+  assert.equal(seats['settings.plugins.tab'], 'plugins', 'the Settings to Plugins tab seat is inside the panel and indexed')
+  assert.equal(seats['settings.general.item'], 'general')
+  assert.equal(seats['settings.plugin.item'], 'plugins', 'legacy seat stays indexed')
+  assert.equal(seats['web-ui.plugin.item'], 'web-ui-plugins', 'legacy seat stays indexed')
+  // 0.2 moves the plugin cards to its standalone Plugins panel, which the
+  // settings-panel navigation cannot reach: indexing it would dead-end.
+  assert.equal(seats['plugins.item'], undefined, 'the standalone panel seat must not be indexed')
+})
+
+test('the seat fingerprint stays meaningful on DSH 0.2, where the legacy card seats are empty', () => {  const { api } = load()
+  const pages = [{ options: { id: 'general', order: 0, label: 'General' } }]
+  const ctx = {
+    effect: (fn) => fn(),
+    get: () => null,
+    inject: () => {},
+    locale: { register: () => {}, bind: () => () => '', subscribe: () => () => {} },
+    slots: {
+      register: (name, id, options) => ({ name, id, options }),
+      inject: (_slot, registrar) => registrar(),
+      entries: (slot) => (slot === 'settings.section' ? pages : []),
+      subscribe: () => () => {},
+    },
+  }
+  api.apply(ctx)
+  const model = api.__indexTestModel
+  const before = model.slotsFingerprint()
+  assert.notEqual(before, '[]', 'an empty fingerprint would disable every rebuild signal on 0.2')
+  pages.push({ options: { id: 'plugins', order: 15, label: 'Plugins' } })
+  assert.notEqual(model.slotsFingerprint(), before, 'a settings page appearing must invalidate a stored index')
+})
+
+// --- Log recording: the in-memory ring, the batched host write-through, and the viewer fallback ---
+
+const logRouteCalls = (calls) => calls.filter((call) => String(call.url).includes('api/settings-search-log'))
+
+test('log entries are batched to the host log route as one formatted line each', () => {
+  const { api, calls } = load()
+  api.log('info', '应用装载', { version: '1.13.0' })
+  api.log('error', '导入失败')
+  api.flushLogs()
+  const [call] = logRouteCalls(calls)
+  assert.ok(call, 'the host log route must be posted to')
+  assert.equal(call.method, 'POST')
+  assert.deepEqual(plain(call.headers), { 'content-type': 'application/json' })
+  assert.equal(call.body.action, 'append')
+  assert.equal(call.body.lines.length, 2)
+  assert.match(call.body.lines[0], /^\d{4}-\d{2}-\d{2}T[\d:.]+Z \[info\] \[[0-9a-f]{8}:1\] 应用装载 \{"version":"1\.13\.0"\}$/)
+  assert.match(call.body.lines[1], /\[error\] \[[0-9a-f]{8}:2\] 导入失败$/)
+})
+
+test('the debounce timer ships queued lines, and clearing drops them instead', () => {
+  const { api, calls, sandbox } = load()
+  let fire = null
+  let delay = 0
+  sandbox.setTimeout = (callback, ms) => { fire = callback; delay = ms; return 1 }
+  sandbox.clearTimeout = () => {}
+  api.log('info', 'a')
+  assert.equal(delay, 1200, 'the batch must be debounced instead of posting per line')
+  assert.equal(logRouteCalls(calls).length, 0)
+  fire()
+  assert.equal(logRouteCalls(calls).length, 1, 'the debounce must ship the queued line')
+
+  api.log('info', 'b')
+  api.discardPendingLogs()
+  api.flushLogs()
+  assert.equal(logRouteCalls(calls).length, 1, 'a cleared queue must not be shipped')
+})
+
+test('the session log text mirrors the on-disk line format for the viewer fallback', () => {
+  const { api } = load()
+  assert.deepEqual(plain(api.logTarget()), { dir: '', file: '', state: 'idle', detail: '', count: null })
+  api.log('info', 'only line')
+  assert.match(api.sessionLogText(), /^\d{4}-\d{2}-\d{2}T[\d:.]+Z \[info\] \[[0-9a-f]{8}:1\] only line$/)
+})
+
+test('a failing host log channel never throws and never logs about itself', async () => {
+  const { api, calls } = load(async () => { throw new TypeError('Failed to fetch') })
+  api.log('info', 'first')
+  api.flushLogs()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.equal(logRouteCalls(calls).length, 1)
+  assert.equal(api.logTarget().state, 'fail')
+  // The failed transport must not have queued a log line of its own.
+  api.flushLogs()
+  assert.equal(logRouteCalls(calls).length, 1)
+})
+
+test('the badge count follows the host file, not just this session', async () => {
+  // The host reports the entries that exist on disk, including earlier runs.
+  const { api, calls } = load(async () => json({ ok: true, count: 7, dir: 'D', file: 'F' }))
+  assert.equal(await api.readLogCount(), 7)
+  const [call] = logRouteCalls(calls)
+  assert.equal(call.method, 'GET')
+  assert.match(String(call.url), /api\/settings-search-log\?count=1$/)
+  assert.deepEqual(plain(api.logTarget()), { dir: 'D', file: 'F', state: 'ok', detail: '', count: 7 })
+
+  // A count that fails to arrive leaves the badge on the session fallback.
+  const { api: offline } = load(async () => { throw new TypeError('Failed to fetch') })
+  assert.equal(await offline.readLogCount(), null)
+  assert.equal(offline.logTarget().count, null)
 })

@@ -2,6 +2,37 @@
 
 The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese version.
 
+## v1.13.0
+
+### Features
+- **Logs on disk and a log folder**: logs are written per local day as `$DSH_HOME/logs/dsh-settings-search/settings-search-YYYY-MM-DD.log` (one dated file per day, beside the other plugins' logs). A single file is capped at 100 MB — the day then continues in numbered parts (`.1`, `.2`, …) — and the whole folder is held at 100 MB by deleting the oldest files by time, **never the file being written**. The pre-daily undated `settings-search.log` is folded into the current day on first run instead of lingering. The log section gained **Open log folder**, which reveals that directory in your file manager.
+- **View logs**: a **View logs** button opens a read-only log window with the end of the on-disk log (open the folder for earlier lines), offering refresh, copy, and open-folder; when the host channel is unavailable it falls back to this session's entries and says so.
+- **DSH 0.2 stable support**: the stable release moved the client plugin inventory onto the `remote.pluginManager` namespace. The plugin now reads it through `listBundles` / `listPlugins` and re-checks on every settings-panel mount, so installing, updating, or toggling another plugin still rebuilds the settings index. Earlier builds keep using the original `pluginManager` client service.
+
+### Fixes
+- **Log recording**: the ring buffer now writes through in batches — one line per entry, `time [level] [run:seq] message {context}`, shipped every 1.2 s or 40 lines and flushed once more when the page hides or unloads. The same line format feeds the file, the viewer, and the exported text. A failing write-through never logs about itself, and clearing logs drops the pending queue and truncates the file.
+- **Host route authorization**: the log channel registers an exact Fetch route on the DSH connection service's authenticated `/api` channel (the carrier the shipped session-log export uses), so the browser only ever calls a document-relative path and never handles a token.
+- **Log tail read**: reading a log larger than the tail budget now decodes only the bytes actually read, so a concurrent truncation or short read can never expose uninitialized memory as log text.
+- **Open log folder (Windows)**: launches through the shell's own open verb (`cmd /c start`) instead of spawning `explorer.exe` directly — with `windowsHide` (CREATE_NO_WINDOW) Explorer creates a window that never becomes visible (measured: `IsWindowVisible() === false`), which is exactly "clicking does nothing". The shell verb shows the window and brings it to the foreground, and the host records the launcher it used (`[host] 打开日志文件夹 ok (cmd.exe)`) so the next attempt is diagnosable from the log itself.
+- **Log counter**: the badge beside the log title counts the entries of **today's log file** (returned by the host and refreshed on every read, write, and clear) instead of only this session's ring buffer; earlier days are visible in the log folder, and the session count is used only when the host channel is unavailable. A hover explains which number is shown. Clearing logs also removes this plugin's older log files.
+- **Import DSH model config**: the stable release moved the client API onto `remote.*` namespaces while the plugin still read through the legacy `connection.api`, so "Import DSH model config" failed with `Cannot read properties of undefined (reading 'settings')`. The reader now picks the face the running DSH offers: `remote.settings` / `remote.llm` on 0.2, `connection.api` on earlier builds.
+- **Explain an impossible import**: when the default model has no importable Base URL in DSH settings (for example a model served by the built-in DSH account), the message now names that model instead of the generic "No current DSH default model config found".
+- **Client load dependencies**: `@deepseek-ai/dsh-client-runtime`, absent from 0.2, is replaced in `dsh.client.inject` by that release's `@deepseek-ai/dsh-api-gateway` and `@deepseek-ai/dsh-api-remotes`.
+- **Plugin-card indexing follows the stable layout**: 0.2 moved plugin management to a standalone sidebar Plugins panel (`plugins.item`) and left only tabs inside the Settings → Plugins section, while search and navigation stay inside the settings dialog. Those cards are therefore no longer indexed on 0.2, so no result can dead-end there; the pre-0.2 seats (`settings.plugin.item`, `web-ui.plugin.item`) stay indexed for older builds.
+- **Rebuild signals**: both original signals were dead on 0.2 — the `pluginManager` client service does not exist, and the fallback fingerprint only counted the two pre-0.2 card seats, so it was permanently empty (`[]`) and an installed plugin never rebuilt the index. Besides moving to `remote.pluginManager`, the fallback now counts every settings page and in-page seat, so a composition without a plugin inventory also invalidates its stored index on the next panel open.
+- **Theme colours align with the stable release**: failure notices now use the stable token `--dsw-alias-state-error-primary`, success notices use `--dsw-alias-state-success-primary`, and dialog masks use `--dsw-alias-bg-mask-1`. The previous `--dsw-alias-label-danger` does not exist in the 0.2 theme, so error text never turned red.
+
+## v1.12.0
+
+### Features
+- **Persistent settings index**: the harvested index is stored in the local browser and rebuilds only on first install, when another plugin is installed or updated, or on demand from the "Settings search" page.
+- **Model picker**: the AI configuration gained "Fetch models", offering the models returned by Ollama, OpenAI-compatible, and Anthropic endpoints while manual entry stays available.
+- **Shortcuts**: the "Settings search" page links to the GitHub repository and the issue tracker.
+
+### Fixes
+- **Popup search stacking**: the popup search overlay moved to z-index 1000 so the host UI can no longer cover it.
+- **Model list reliability**: model list requests are capped at 12 seconds, refuse redirects, and are cancelled (with the stale list cleared) when the configuration changes.
+
 ## v1.11.0
 
 ### Features
@@ -80,13 +111,3 @@ The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese v
 ---
 
 _Keep this file bilingual going forward; update CHANGELOG.md with the Chinese text as well._
-## v1.12.0
-
-### Features
-- **Persistent settings index** — the first harvested settings index is stored locally. It rebuilds only on first use or after another plugin is installed or updated, and can be rebuilt manually from the Settings Search page.
-- **Model selection** — the AI configuration can fetch models from Ollama, OpenAI-compatible, and Anthropic APIs; complete manual model names are still supported.
-- **Quick links** — the Settings Search page links to the GitHub repository and issue chooser.
-
-### Fixes
-- **Popup layering** — the popup search overlay now uses z-index 1000 so host UI cannot cover it.
-- **Model list reliability** — model list requests time out after 12 seconds, reject redirects, and clear stale lists when configuration changes.

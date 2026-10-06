@@ -4,3 +4,6 @@
 
 # Debug/probe bundle dumps (third-party DSH client bundles exported during testing)
 _probe_*.js
+
+# Scratch screenshots taken while validating the panel by hand
+tmp-*.png
