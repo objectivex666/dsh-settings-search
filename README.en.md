@@ -17,7 +17,7 @@
 - 🔍 **Live search** — a search box in the settings panel filters every registered settings page (`settings.section`) and general item (`settings.general.item`) as you type.
 - 🧩 **Three search styles** — choose the classic sidebar, window top bar, or popup search page. The choice is saved in the current browser.
 - ⌨️ **Search shortcut (v1.10.0)** — focus the search box with `Ctrl+F` or `⌘F` inside the settings panel. You can enable or disable it from the "Settings Search" page; disabling keeps the browser's default find behavior.
-- 🤝 **Import DSH model config (v1.9.0)** — import the Base URL and model name from DSH's current default model in the AI config section. For credential safety, the API key is never imported.
+- 🤝 **Import DSH model config (v1.9.0)** — import the Base URL and model name from DSH's current default model in the AI config section. When that default is a built-in DeepSeek route (whose settings carry no Base URL), the import uses DeepSeek's own endpoint, `https://api.deepseek.com/anthropic`. For credential safety, the API key is never imported.
 - 🎯 **First-run onboarding (v1.9.0)** — a welcome modal appears only the first time the settings panel opens after installation. It introduces the four search styles, pinyin/intent/AI hints, click-to-jump, and auto-indexing; there are no "Don't show again" or manual reopen buttons.
 - 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), the pre-0.2 plugin-card seats (`settings.plugin.item` / `web-ui.plugin.item`, both gone in 0.2), general rows, and more, each shown with a "page › option" breadcrumb.
 - 🔤 **Pinyin association search (v1.5.0)** — type initials (`sz`) or full pinyin (`shezhi`) to surface Chinese settings items; navigate with `↑`/`↓`, confirm with `Enter`, dismiss with `Esc`, and matched text is highlighted.
@@ -128,7 +128,8 @@ npm test   # structural checks and mocked Ollama / OpenAI / Anthropic regression
 Issues are welcome — please report bugs, suggest features, or ask questions in
 [GitHub Issues](https://github.com/objectivex666/dsh-settings-search/issues).
 Pull requests are equally welcome via
-[GitHub Pull Requests](https://github.com/objectivex666/dsh-settings-search/pulls).
+[GitHub Pull Requests](https://github.com/objectivex666/dsh-settings-search/pulls) —
+please read [CONTRIBUTING.en.md](./CONTRIBUTING.en.md) first (layout, conventions, tests, and the release flow).
 
 When submitting an issue, please include as much of the following as possible so we can locate and reproduce it:
 

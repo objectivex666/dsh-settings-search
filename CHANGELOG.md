@@ -2,6 +2,11 @@
 
 变更记录为双语：英文见 [CHANGELOG.en.md](./CHANGELOG.en.md)。
 
+## v1.13.1
+
+### 修复
+- **导入 DSH 模型配置（内置 DeepSeek 路由）**：默认模型是 DSH 内置的 DeepSeek 路由时（`deepseek-official` / `deepseek-account`，地址写死在适配器里而不在设置里），原先会提示「没有可导入的 Base URL」；现在直接导入 DeepSeek 的接口地址 `https://api.deepseek.com/anthropic` 与模型名，并按适配器固定的 Messages 协议识别为 Anthropic 接口（设置里显式配置过 `baseURL` 时仍以设置为准）。该路由没有可供插件使用的 API Key，成功提示会说明需自行填写；其它 provider 缺少 Base URL 时仍按原样提示模型名。
+
 ## v1.13.0
 
 ### 新功能

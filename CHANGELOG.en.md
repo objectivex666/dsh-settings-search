@@ -2,6 +2,11 @@
 
 The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese version.
 
+## v1.13.1
+
+### Fixes
+- **Import DSH model config (built-in DeepSeek route)**: when the default model is one of DSH's built-in DeepSeek routes (`deepseek-official` / `deepseek-account`, whose address lives in the adapter rather than in settings) the import used to report that there was no Base URL to import. It now imports DeepSeek's own endpoint, `https://api.deepseek.com/anthropic`, together with the model name, and maps it to the Anthropic interface through the adapter's fixed Messages protocol (a `baseURL` configured in settings still wins). Those routes carry no API key the plugin could use, and the success notice says so; other providers without a Base URL still get the model-naming message.
+
 ## v1.13.0
 
 ### Features

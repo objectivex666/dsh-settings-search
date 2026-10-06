@@ -17,7 +17,7 @@
 - 🔍 **实时搜索**：在设置面板中嵌入搜索框，输入关键词立即过滤所有已注册的设置页（`settings.section`）与通用设置项（`settings.general.item`）。
 - 🧩 **三种搜索样式**：可选择经典侧栏、窗口顶栏或弹出搜索页；选择会保存在当前浏览器。
 - ⌨️ **搜索快捷键（v1.10.0）**：在设置面板内按 `Ctrl+F` 或 `⌘F` 聚焦搜索框；可在「设置搜索」页启用或关闭，关闭后保留浏览器默认查找。
-- 🤝 **导入 DSH 模型配置（v1.9.0）**：在 AI 配置区一键读取 DSH 当前默认模型的 Base URL 与模型名；为避免凭据扩散，导入始终不包含 API Key。
+- 🤝 **导入 DSH 模型配置（v1.9.0）**：在 AI 配置区一键读取 DSH 当前默认模型的 Base URL 与模型名；默认模型是 DSH 内置的 DeepSeek 路由时（设置里不含 Base URL），导入 DeepSeek 的接口地址 `https://api.deepseek.com/anthropic`。为避免凭据扩散，导入始终不包含 API Key。
 - 🎯 **新用户引导（v1.9.0）**：仅在安装后首次打开设置面板时弹出引导弹窗，介绍四种搜索样式、拼音/意图/AI 联想、点击即达与自动导入索引等核心功能；不再提供“不再显示”和手动重开按钮。
 - 📂 **页内选项搜索（v1.2.0）**：不只搜页面，还能直达每个设置页内部的具体选项——插件页的标签页（`settings.plugins.tab`）、旧版的插件卡片座位（`settings.plugin.item` / `web-ui.plugin.item`，0.2 已移除）、通用设置行等，结果以「页面 › 选项」面包屑展示。
 - 🔤 **拼音联想搜索（v1.5.0）**：输入拼音首字母（如 `sz`）或全拼（如 `shezhi`）即可联想中文设置项；支持 `↑`/`↓` 选择、`Enter` 跳转、`Esc` 关闭，命中的文字自动高亮。
@@ -127,7 +127,8 @@ npm test   # 结构检查及 Ollama / OpenAI / Anthropic 模拟接口回归测�
 
 欢迎提交 **Issue** 反馈 Bug、功能建议或使用疑问：
 [GitHub Issues](https://github.com/objectivex666/dsh-settings-search/issues)，
-也欢迎直接发起 [Pull Request](https://github.com/objectivex666/dsh-settings-search/pulls)。
+也欢迎直接发起 [Pull Request](https://github.com/objectivex666/dsh-settings-search/pulls)——
+动手前请先读一遍 [贡献指南](./CONTRIBUTING.md)（结构、代码约定、测试与发布流程）。
 
 提交 Issue 时，请尽量完整地提供以下信息，便于定位与复现：
 

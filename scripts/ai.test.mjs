@@ -497,26 +497,64 @@ test('a DSH build with no settings API fails with a readable reason instead of a
   await assert.rejects(api.readDshModelConfig({ get: () => undefined }, (key) => key), { message: 'aiDshImportApi' })
 })
 
-test('a default model without an importable Base URL names the model, and no default model imports nothing', async () => {
-  const { api } = load()
-  const account = {
-    get: (name) => name === 'remote.settings'
-      ? {
-          describe: async () => describeReply([
-            { ns: 'agent-default-model', value: { provider: 'deepseek-account', model: 'deepseek-flash' } },
-          ]),
-        }
-      : name === 'remote.llm'
-        ? {
-            listConfigurableProviders: async () => ({
-              ok: true,
-              value: [{ provider: 'deepseek-account', settingsNs: 'llm-deepseek-account', settingsPath: [] }],
-            }),
-          }
-        : undefined,
-  }
-  await assert.rejects(api.readDshModelConfig(account, (key) => key), { message: 'aiDshImportNoBaseUrl' })
+// --- DSH default-model import: the built-in DeepSeek route ---
 
+/** A ctx whose default model is one route, with whatever namespaces it reads. */
+const dshDefaultModel = (provider, model, { settingsNs, namespaces = [] } = {}) => ({
+  get: (name) => name === 'remote.settings'
+    ? {
+        describe: async () => describeReply([
+          { ns: 'agent-default-model', value: { provider, model } },
+          ...namespaces,
+        ]),
+      }
+    : name === 'remote.llm'
+      ? {
+          listConfigurableProviders: async () => ({
+            ok: true,
+            value: [{ provider, settingsNs, settingsPath: [] }],
+          }),
+        }
+      : undefined,
+})
+
+test('a built-in DeepSeek default model imports the adapter\u2019s own endpoint', async () => {
+  const { api } = load()
+  for (const [provider, settingsNs] of [['deepseek-account', 'llm-deepseek-account'], ['deepseek-official', 'llm-deepseek']]) {
+    const ctx = dshDefaultModel(provider, 'deepseek-flash', { settingsNs })
+    assert.deepEqual(plain(await api.readDshModelConfig(ctx, (key) => key)), {
+      provider: 'anthropic',
+      baseUrl: 'https://api.deepseek.com/anthropic',
+      model: 'deepseek-flash',
+      builtin: true,
+    }, `${provider} must fall back to the DeepSeek endpoint`)
+  }
+})
+
+test('a configured DeepSeek base URL wins over the built-in fallback', async () => {
+  const { api } = load()
+  const ctx = dshDefaultModel('deepseek-official', 'deepseek-chat', {
+    settingsNs: 'llm-deepseek',
+    namespaces: [{ ns: 'llm-deepseek', value: { baseURL: 'https://proxy.test/anthropic' } }],
+  })
+  assert.deepEqual(plain(await api.readDshModelConfig(ctx, (key) => key)), {
+    provider: 'anthropic',
+    baseUrl: 'https://proxy.test/anthropic',
+    model: 'deepseek-chat',
+  })
+})
+
+test('a third-party route without an importable Base URL still names the model', async () => {
+  const { api } = load()
+  const ctx = dshDefaultModel('acme-gateway', 'acme-large', {
+    settingsNs: 'llm-pi-ai',
+    namespaces: [{ ns: 'llm-pi-ai', value: { providers: { 'acme-gateway': { models: [{ id: 'acme-large' }] } } } }],
+  })
+  await assert.rejects(api.readDshModelConfig(ctx, (key) => key), { message: 'aiDshImportNoBaseUrl' })
+})
+
+test('no default model imports nothing', async () => {
+  const { api } = load()
   const idle = {
     get: (name) => name === 'remote.settings'
       ? { describe: async () => describeReply([{ ns: 'agent-default-model', value: {} }]) }
@@ -584,7 +622,7 @@ const logRouteCalls = (calls) => calls.filter((call) => String(call.url).include
 
 test('log entries are batched to the host log route as one formatted line each', () => {
   const { api, calls } = load()
-  api.log('info', '应用装载', { version: '1.13.0' })
+  api.log('info', '应用装载', { version: '1.13.1' })
   api.log('error', '导入失败')
   api.flushLogs()
   const [call] = logRouteCalls(calls)
@@ -593,7 +631,7 @@ test('log entries are batched to the host log route as one formatted line each',
   assert.deepEqual(plain(call.headers), { 'content-type': 'application/json' })
   assert.equal(call.body.action, 'append')
   assert.equal(call.body.lines.length, 2)
-  assert.match(call.body.lines[0], /^\d{4}-\d{2}-\d{2}T[\d:.]+Z \[info\] \[[0-9a-f]{8}:1\] 应用装载 \{"version":"1\.13\.0"\}$/)
+  assert.match(call.body.lines[0], /^\d{4}-\d{2}-\d{2}T[\d:.]+Z \[info\] \[[0-9a-f]{8}:1\] 应用装载 \{"version":"1\.13\.1"\}$/)
   assert.match(call.body.lines[1], /\[error\] \[[0-9a-f]{8}:2\] 导入失败$/)
 })
 
