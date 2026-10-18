@@ -2,6 +2,19 @@
 
 The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese version.
 
+## v1.14.0
+
+### Adapted to Harness 0.2.1-rc.2
+An item-by-item audit found no breaking change in the surfaces this plugin relies on: the `connection` and `remote.<ns>` services, `settings.describe` (no arguments; `namespaces[].ns/value`), `llm.listConfigurableProviders` (`settingsNs`/`settingsPath`), the `pluginManager` inventory fields, the host Fetch route registry and path validation, all four settings slot seats, all 18 `--dsw-*` theme tokens, the Plugins-page group hooks, the DeepSeek adapter constants, and the `__ModuleLoader__` hand-off format are unchanged. What 0.2.1 added is the plugin market, `api-remote-access` (method-level gating for non-owner peers, irrelevant here), and platform-suffixed client bundle filenames — the plugin keeps working without changes.
+
+### Features
+- **Compatibility audit** (`npm run compat`): reads the Harness installed on this machine (the desktop `app.asar`, auto-detected or given through `--asar` / `DSH_ASAR`) and asserts every surface listed above, printing PASS/FAIL per item. Run it first after a Harness upgrade — the failing lines are what needs adapting. It needs a local install, so it does not run in CI. Currently **12/12 pass** against 0.2.1-rc.2.
+
+### Fixes
+- **Plugins-page groups are searchable**: the **Session Plugins / Global Plugins** group titles on the settings page were not indexed. DSH's CSS-module class names keep their camelCase (`RotMhW_groupTitle`), while the in-page miner matched classes case-sensitively (`[class*="title"]`). Matching is now case-insensitive and shallow page/group headings are harvested before card titles, so dozens of plugin cards can no longer consume the 24-entry cap before the next group is seen.
+- **Index cache schema**: the persisted index moved to **v2**, so an old cache is discarded and rebuilt automatically — no manual "rebuild index" needed — and upgrading immediately includes the newly harvested entries; writing v2 also removes the old v1 cache key.
+- **A page's own search box is no longer indexed as a setting**: the Plugins page renders its own filter input inside a `<label>`, which the in-page miner mistook for a setting (hence a "插件 › 搜索插件" result). Labels wrapping `input[type="search"]` are now skipped; ordinary text inputs in settings rows are unaffected.
+
 ## v1.13.1
 
 ### Fixes

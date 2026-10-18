@@ -1,6 +1,6 @@
 {
   "name": "@objectivex666/dsh-settings-search",
-  "version": "1.13.1",
+  "version": "1.14.0",
   "description": "DSH settings panel search plugin – instantly filter setting sections and general items with navigation guidance. Installable via `dsh plugin add`.",
   "keywords": [
     "dsh",
@@ -56,7 +56,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node scripts/check.mjs && node --test scripts/ai.test.mjs scripts/log.test.mjs"
+    "test": "node scripts/check.mjs && node --test scripts/ai.test.mjs scripts/log.test.mjs",
+    "compat": "node scripts/compat.mjs"
   },
   "publishConfig": {
     "access": "public"

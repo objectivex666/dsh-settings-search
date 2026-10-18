@@ -27,13 +27,16 @@ Thanks for improving `@objectivex666/dsh-settings-search`. This file covers the 
 ## Running the tests
 
 ```bash
-npm test                                  # structural checks + every regression test (63 cases today)
+npm test                                  # structural checks + every regression test (65 cases today)
 node scripts/check.mjs                    # structural checks only
 node --test scripts/ai.test.mjs           # browser half only
 node --test scripts/log.test.mjs          # host half only
+npm run compat                            # audit the non-public surfaces of the Harness installed here
 ```
 
 A pull request must leave `npm test` green. Fixing a bug means adding a case that reproduces it; adding a feature means covering both the success and the failure path.
+
+`npm run compat` checks the surfaces this plugin relies on that belong to no npm API (service names, Remote descriptors, slot seats, theme tokens, Fetch routes, DeepSeek constants, the client hand-off format). It needs a local Harness install, so it **does not run in CI**; run it first after a Harness upgrade — the failing lines are what needs adapting.
 
 ## Code conventions
 

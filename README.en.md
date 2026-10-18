@@ -18,16 +18,16 @@
 - 🧩 **Three search styles** — choose the classic sidebar, window top bar, or popup search page. The choice is saved in the current browser.
 - ⌨️ **Search shortcut (v1.10.0)** — focus the search box with `Ctrl+F` or `⌘F` inside the settings panel. You can enable or disable it from the "Settings Search" page; disabling keeps the browser's default find behavior.
 - 🤝 **Import DSH model config (v1.9.0)** — import the Base URL and model name from DSH's current default model in the AI config section. When that default is a built-in DeepSeek route (whose settings carry no Base URL), the import uses DeepSeek's own endpoint, `https://api.deepseek.com/anthropic`. For credential safety, the API key is never imported.
-- 🎯 **First-run onboarding (v1.9.0)** — a welcome modal appears only the first time the settings panel opens after installation. It introduces the four search styles, pinyin/intent/AI hints, click-to-jump, and auto-indexing; there are no "Don't show again" or manual reopen buttons.
-- 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), the pre-0.2 plugin-card seats (`settings.plugin.item` / `web-ui.plugin.item`, both gone in 0.2), general rows, and more, each shown with a "page › option" breadcrumb.
+- 🎯 **First-run onboarding (v1.9.0)** — a welcome modal appears only the first time the settings panel opens after installation. It introduces live search, pinyin and intent hints, AI hints, click-to-jump, the built-in settings page, and auto-indexing; there are no "Don't show again" or manual reopen buttons.
+- 📂 **In-page option search (v1.2.0)** — search beyond pages and reach the specific options inside them: Plugins-page tabs (`settings.plugins.tab`), the **会话插件 / 全局插件** group titles on the Plugins page, the pre-0.2 plugin-card seats (`settings.plugin.item` / `web-ui.plugin.item`, both gone in 0.2), general rows, and more, each shown with a "page › option" breadcrumb.
 - 🔤 **Pinyin association search (v1.5.0)** — type initials (`sz`) or full pinyin (`shezhi`) to surface Chinese settings items; navigate with `↑`/`↓`, confirm with `Enter`, dismiss with `Esc`, and matched text is highlighted.
 - 🧠 **Intent search (v1.6.0)** — describe the goal in Chinese (e.g. 「太亮了」 "too bright", 「字太小」 "text too small") to surface matching settings without knowing their names, shown in a "You may want" group.
 - 🤖 **AI-assisted search** — when nothing matches locally, your OpenAI-compatible, Anthropic, or local Ollama model understands your search intent and suggests settings. Off by default; configure it on the plugin's settings page. Ollama needs no API key.
-- 💾 **Persistent settings index (v1.12.0)** — the first harvested settings index is stored locally. It rebuilds only on first use or after another plugin is installed or updated, and can be rebuilt manually from the Settings Search page.
+- 💾 **Persistent settings index (v1.12.0)** — the first harvested settings index is stored locally. It rebuilds only on first use, after another plugin is installed, updated, enabled, or disabled, and can be rebuilt manually from the Settings Search page.
 - 🧾 **Logging & viewing (v1.13.0 / v1.7.0)** — records key plugin actions, searches, and AI requests. Logs are written per local day as `$DSH_HOME/logs/dsh-settings-search/settings-search-YYYY-MM-DD.log`: one dated file per day, capped at 100 MB (the day then continues in numbered parts, `.1`, `.2`, …), with the whole folder held at 100 MB by deleting the oldest files — never the one being written. The plugin's page can **view logs**, **open the log folder**, copy, export, or clear them; the badge beside the "Logs" title counts today's file. API keys are never logged.
 - 🧭 **Click-to-jump** — selecting a result clicks the matching left-nav entry to open its section; for tab options it also opens the tab and flashes the target row. A manual-path hint appears if automatic navigation is not possible.
 - 🌱 **Auto-index on startup (v1.8.0)** — the first time the settings panel opens, the plugin automatically visits every settings section, silently reads in-page options (e.g. "Enable Workshop card") into the search index, then restores your current section, so all section options are searchable without having to open each page manually. A "Importing section options…" hint shows under the search box and clears when done.
-- 🛠 **Built-in settings page (v1.4.0)** — a "Settings Search" page in the left navigation shows the current version and checks npm for a newer release on demand; when one exists it hands you a copy-ready `dsh plugin update` command.
+- 🛠 **Built-in settings page (v1.4.0)** — a "Settings Search" page in the left navigation shows the current version and checks npm for a newer release on demand; when one exists it hands you a copy-ready upgrade command carrying the profile name and the latest version.
 - 🧭 **View release notes (v1.7.1)** — the "Settings Search" page has a "View changelog" button next to "Check for updates"; it fetches the GitHub release notes and shows them inline, opening the release page if fetching fails.
 - 🌐 **i18n** — built-in Chinese/English dictionaries that follow the DSH localization system and are easy to extend.
 - 🎨 **Theme-aware** — styled entirely with CSS variables, automatically following the DSH theme (light/dark).
@@ -39,9 +39,11 @@
 
 This plugin is a standard **DSH profile bundle**: once installed it wires itself into the settings panel — no manual edits to any DSH configuration file.
 
+The commands below target a command-line profile. The desktop app manages its own `desktop` profile, which the CLI cannot touch — install the plugin for the desktop app from its plugin management page instead.
+
 ### Prerequisites
 
-- **DeepSeek Harness (DSH)** — DSH 0.2 stable (desktop and `dsh web`) and earlier 0.1 builds; the plugin picks the API the running release offers.
+- **DeepSeek Harness (DSH)** — DSH 0.2 stable (desktop and `dsh web`) and earlier 0.1 builds; the plugin picks the API the running release offers. Verified against **0.2.1-rc.2** item by item (`npm run compat`); behaviour on 0.2.0 and earlier is unchanged.
 - **Node.js** >= 18 (LTS recommended).
 
 ### From npm (recommended)
@@ -62,7 +64,7 @@ dsh plugin --profile web add github:objectivex666/dsh-settings-search
 dsh plugin --profile web add /path/to/dsh-settings-search
 ```
 
-After installing, **restart DSH** (`dsh web`); the search box appears at the top of the settings panel.
+After installing, **restart DSH** (`dsh web`); the search box appears in the settings panel.
 
 To uninstall: `dsh plugin --profile web remove @objectivex666/dsh-settings-search`.
 
@@ -115,8 +117,11 @@ scripts/log.test.mjs Host log file and route regression tests (temp dirs; never 
 ## Development
 
 ```bash
-npm test   # structural checks and mocked Ollama / OpenAI / Anthropic regression tests
+npm test       # structural checks and mocked Ollama / OpenAI / Anthropic regression tests
+npm run compat # audit compatibility against the Harness installed on this machine
 ```
+
+`npm run compat` reads the local install (auto-detected; `--asar <app.asar>` or `DSH_ASAR=<app.asar>` also work) and checks the surfaces this plugin relies on that belong to no npm API — service names, Remote descriptors, slots, theme tokens, the Fetch route registry, and the DeepSeek constants. Run it first after a Harness upgrade to see exactly what moved.
 
 > Historical note: up to v1.1 the repo shipped `dsh-settings-search.js` (an
 > in-session `cordis_define` dynamic-plugin source). Because keeping it in
@@ -135,7 +140,7 @@ When submitting an issue, please include as much of the following as possible so
 
 - **Problem description**: what you expected vs. what actually happened.
 - **Reproduction steps**: a step-by-step walkthrough, including the triggering keywords and the settings page involved.
-- **Logs**: export the recent search/runtime logs from the plugin's "Logging & export" page and paste them (API keys are never logged, so it is safe to share); include any console errors as well.
+- **Logs**: open the "Logs" section of the plugin's page, use "Export logs", and paste the recent search/runtime logs (API keys are never logged, so it is safe to share); include any console errors as well.
 - **Environment**: DSH version, Node.js version, plugin version (shown on the "Settings Search" page), OS, and browser.
 - **Screenshots / screen recording**: helpful for UI-related issues.
 
@@ -143,8 +148,8 @@ When submitting an issue, please include as much of the following as possible so
 
 Every version bump keeps git tags and GitHub Releases in sync, with a bilingual body that lists both new features and fixes:
 
-- Update [CHANGELOG.md](./CHANGELOG.md) (Chinese) and [CHANGELOG.en.md](./CHANGELOG.en.md) (English), each with `### ✨ Features` and `### 🐛 Fixes` sections.
-- Bump the version in `package.json` and the README, then tag and push as `vX.Y.Z`; GitHub Actions publishes to npm (`npm-publish.yml`) and creates a bilingual GitHub Release (`release.yml`).
+- Update [CHANGELOG.md](./CHANGELOG.md) (Chinese) and [CHANGELOG.en.md](./CHANGELOG.en.md) (English), each with a features section and a fixes section (`新功能` / `修复` in Chinese, `Features` / `Fixes` in English).
+- Bump `version` in `package.json` together with `PKG_VERSION` in `lib/client.js` (`npm test` enforces they match), add the version label next to any new feature, then tag and push as `vX.Y.Z`; GitHub Actions publishes to npm (`npm-publish.yml`) and creates a bilingual GitHub Release (`release.yml`).
 - Preview the release body locally: `node scripts/release.mjs --version <ver>`
 - Tag and publish for real: `node scripts/release.mjs --version <ver> --publish` (requires `gh` CLI, logged in)
 

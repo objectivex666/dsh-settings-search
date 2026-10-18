@@ -42,6 +42,145 @@ const reply = (provider, content = '{"keywords":["Language"]}') => provider === 
     ? { content: [{ type: 'text', text: content }] }
     : { choices: [{ message: { role: 'assistant', content } }] }
 
+// --- A tiny synchronous DOM, enough for the in-page harvest (see the DSH classes below) ---
+
+/** Parse one compound selector: an optional tag plus `[attr]`/`[attr="v"]`/`[attr*="v" i]`. */
+const parseCompound = (token) => {
+  const tag = /^[a-z0-9]+/i.exec(token)?.[0] ?? ''
+  const attrs = []
+  const re = /\[([a-zA-Z-]+)(?:([*^$]?=)"([^"]*)"(?:\s+(i))?)?\]/g
+  let match
+  while ((match = re.exec(token)) !== null) {
+    attrs.push({ name: match[1], op: match[2], value: match[3], insensitive: match[4] === 'i' })
+  }
+  return { tag, attrs }
+}
+
+const attrOf = (node, name) => (name === 'class' ? node.class : node.attr[name])
+
+const compoundMatches = (node, compound) => {
+  if (compound.tag !== '' && node.tag.toLowerCase() !== compound.tag.toLowerCase()) return false
+  for (const attr of compound.attrs) {
+    const raw = attrOf(node, attr.name)
+    if (raw === undefined) return false
+    if (attr.op === undefined) continue
+    const value = attr.insensitive ? raw.toLowerCase() : raw
+    const expected = attr.insensitive ? attr.value.toLowerCase() : attr.value
+    if (attr.op === '=' && value !== expected) return false
+    if (attr.op === '*=' && !value.includes(expected)) return false
+  }
+  return true
+}
+
+/** Collect descendants matching any compound of a comma-separated selector. */
+const matchAll = (root, selector) => {
+  const compounds = selector.split(',')
+    .map((token) => parseCompound(token.trim()))
+    .filter((compound) => compound.tag !== '' || compound.attrs.length > 0)
+  const out = []
+  const walk = (node) => {
+    for (const child of node.children) {
+      if (compounds.some((compound) => compoundMatches(child, compound))) out.push(child)
+      walk(child)
+    }
+  }
+  walk(root)
+  return out
+}
+
+/**
+ * One element of the fake DOM. `class` follows DSH's CSS-module shape
+ * (`RotMhW_groupTitle`), which is what the harvest has to recognise.
+ */
+const el = (tag, options = {}, children = []) => {
+  const node = {
+    tag,
+    tagName: tag.toUpperCase(),
+    class: options.class ?? '',
+    attr: options.attr ?? {},
+    text: options.text ?? '',
+    children: [],
+    parentElement: null,
+    get className() { return node.class },
+    get textContent() { return [node.text, ...node.children.map((child) => child.textContent)].filter(Boolean).join(' ') },
+    get childElementCount() { return node.children.length },
+    get firstElementChild() { return node.children[0] ?? null },
+    getAttribute(name) { return attrOf(node, name) ?? null },
+    querySelectorAll(selector) { return matchAll(node, selector) },
+    querySelector(selector) { return matchAll(node, selector)[0] ?? null },
+  }
+  node.children = children.map((child) => {
+    child.parentElement = node
+    return child
+  })
+  return node
+}
+
+/** A document stub over one tree, with the pieces `installStyles` and `panelRoot` need. */
+const fakeDocument = (root) => ({
+  head: { appendChild() {} },
+  body: root,
+  createElement: () => ({ dataset: {}, textContent: '', remove() {} }),
+  querySelectorAll: (selector) => matchAll(root, selector),
+  querySelector: (selector) => matchAll(root, selector)[0] ?? null,
+})
+
+/**
+ * The DSH 0.2.1 Plugins settings page as the harvest sees it: a search row plus
+ * the 会话插件 / 全局插件 groups, whose titles live in `RotMhW_groupTitle`
+ * spans (camelCase, like every DSH CSS-module class).
+ */
+const pluginsPageDom = () => {
+  const titleRow = (title) => el('div', { class: 'RotMhW_groupTitleRow' }, [
+    el('button', { class: 'RotMhW_groupToggle', attr: { 'aria-expanded': 'false' } }, [
+      el('span', { class: 'RotMhW_groupTitle', text: title }),
+    ]),
+  ])
+  const group = (scope, title, rows = 0) => el('section', { class: 'RotMhW_group', attr: { 'data-plugin-scope': scope } }, [
+    titleRow(title),
+    el('p', { class: 'RotMhW_groupSub', text: scope === 'preset' ? '由 Agent 预设按会话组成' : '系统与所有会话共用' }),
+    el('div', { class: 'RotMhW_pluginList' }, Array.from({ length: rows }, (_, i) =>
+      el('button', { class: 'RotMhW_pluginRow' }, [
+        el('strong', { class: 'RotMhW_cardTitle', text: `${scope}-plugin-${i}` }),
+      ]))),
+  ])
+  const page = el('div', { class: 'RotMhW_section' }, [
+    el('h2', { class: 'RotMhW_heading', text: '插件' }),
+    el('div', { class: 'RotMhW_catalog' }, [
+      el('label', { class: 'RotMhW_search' }, [
+        el('span', { class: 'RotMhW_visuallyHidden', text: '搜索插件' }),
+        el('input', { attr: { type: 'search' } }),
+      ]),
+      // More card titles than the 24-entry cap, so a DOM-order harvest would
+      // truncate the second group title before seeing it.
+      group('preset', '会话插件', 30),
+      group('global', '全局插件'),
+    ]),
+  ])
+  const navButton = el('button', { attr: { 'aria-current': 'true' }, text: '插件' })
+  const dialog = el('div', { attr: { role: 'dialog' } }, [
+    el('div', { class: 'RotMhW_nav' }, [navButton]),
+    el('div', { attr: { 'data-slot': 'settings.section' } }, [page]),
+  ])
+  return { dialog }
+}
+
+/** A ctx whose Plugins page is the active settings section. */
+const pluginsPageCtx = () => ({
+  effect: (fn) => fn(),
+  get: () => null,
+  inject: () => {},
+  locale: { register: () => {}, bind: () => () => '', subscribe: () => () => {} },
+  slots: {
+    register: (name, id, options) => ({ name, id, options }),
+    inject: (_slot, registrar) => registrar(),
+    entries: (slot) => (slot === 'settings.section'
+      ? [{ options: { id: 'plugins', order: 15, label: '插件' } }]
+      : []),
+    subscribe: () => () => {},
+  },
+})
+
 function load(fetchImpl = async () => json(reply('ollama'))) {
   let handoff
   const calls = []
@@ -75,8 +214,8 @@ test('persistent settings index reuses matching fingerprints and drops invalid r
     },
   }
   assert.equal(Object.keys(api.serializeHarvest(new Map())).length, 0)
-  sandbox.localStorage.setItem('dsh-settings-search:index:v1', JSON.stringify({
-    version: 1,
+  sandbox.localStorage.setItem('dsh-settings-search:index:v2', JSON.stringify({
+    version: 2,
     fingerprint: 'manager:test',
     updatedAt: 1,
     harvest: records,
@@ -114,12 +253,61 @@ test('persistent settings index reuses matching fingerprints and drops invalid r
   assert.equal(model.persistIndex('manager:changed'), false)
 })
 
-test('readIndexCache rejects malformed persisted index payloads', () => {
+test('readIndexCache rejects malformed and legacy persisted index payloads', () => {
   const { api, sandbox } = load()
-  for (const value of ['{', '{"version":1}', 'null']) {
-    sandbox.localStorage.setItem('dsh-settings-search:index:v1', value)
+  const legacy = JSON.stringify({ version: 1, fingerprint: 'manager:old', updatedAt: 1, harvest: {} })
+  for (const value of ['{', '{"version":2}', 'null', legacy]) {
+    sandbox.localStorage.setItem('dsh-settings-search:index:v2', value)
     assert.equal(api.readIndexCache(), null)
   }
+})
+
+test('writing the index uses the current schema and drops the legacy cache key', () => {
+  const { api, sandbox } = load()
+  const records = { 'settings.general.item': { row1: { title: 'Row', idx: 0, text: '', inner: [] } } }
+  sandbox.localStorage.setItem('dsh-settings-search:index:v1', JSON.stringify({ version: 1, fingerprint: 'manager:old', updatedAt: 1, harvest: records }))
+  sandbox.localStorage.setItem('dsh-settings-search:index:v2', JSON.stringify({ version: 2, fingerprint: 'manager:test', updatedAt: 1, harvest: records }))
+  api.apply({
+    effect: (fn) => fn(),
+    get: () => null,
+    inject: () => {},
+    locale: { register: () => {}, bind: () => () => '', subscribe: () => () => {} },
+    slots: {
+      register: (name, id, options) => ({ name, id, options }),
+      inject: (_slot, registrar) => registrar(),
+      entries: (slot) => (slot === 'settings.general.item' ? [{ options: { id: 'row1', order: 1 } }] : []),
+      subscribe: () => () => {},
+    },
+  })
+  const model = api.__indexTestModel
+  assert.equal(model.persistIndex('manager:next'), true)
+  assert.equal(sandbox.localStorage.getItem('dsh-settings-search:index:v1'), null)
+  const raw = JSON.parse(sandbox.localStorage.getItem('dsh-settings-search:index:v2'))
+  assert.equal(raw.version, 2)
+  assert.equal(raw.fingerprint, 'manager:next')
+})
+
+test('in-page group titles on the Plugins page are harvested and searchable', () => {
+  const { api, sandbox } = load()
+  sandbox.document = fakeDocument(pluginsPageDom().dialog)
+  api.apply(pluginsPageCtx())
+  const model = api.__indexTestModel
+  // The warm pass visits the active section and mines what it renders; the
+  // 会话插件 / 全局插件 groups are plain DOM, not slot registrations.
+  model.runHarvest()
+  const options = model.readDeep().filter((item) => item.parentLabel === '插件')
+  const labels = options.map((item) => item.label)
+  assert.ok(labels.includes('会话插件'), `会话插件 missing from ${JSON.stringify(labels)}`)
+  assert.ok(labels.includes('全局插件'), `全局插件 missing from ${JSON.stringify(labels)}`)
+  for (const label of ['会话插件', '全局插件']) {
+    const option = options.find((item) => item.label === label)
+    assert.equal(option.kind, 'option')
+    assert.equal(option.pageLabel, '插件')
+    assert.equal(option.slot, 'settings.section')
+  }
+  // The page's own filter box is not a setting: its label text must not become
+  // an in-page option (the Plugins tab renders one).
+  assert.ok(!labels.includes('搜索插件'), `the page filter leaked into the index: ${JSON.stringify(labels)}`)
 })
 
 test('Ollama configuration persists and requires a model but no key', () => {
@@ -622,7 +810,7 @@ const logRouteCalls = (calls) => calls.filter((call) => String(call.url).include
 
 test('log entries are batched to the host log route as one formatted line each', () => {
   const { api, calls } = load()
-  api.log('info', '应用装载', { version: '1.13.1' })
+  api.log('info', '应用装载', { version: '1.14.0' })
   api.log('error', '导入失败')
   api.flushLogs()
   const [call] = logRouteCalls(calls)
@@ -631,7 +819,7 @@ test('log entries are batched to the host log route as one formatted line each',
   assert.deepEqual(plain(call.headers), { 'content-type': 'application/json' })
   assert.equal(call.body.action, 'append')
   assert.equal(call.body.lines.length, 2)
-  assert.match(call.body.lines[0], /^\d{4}-\d{2}-\d{2}T[\d:.]+Z \[info\] \[[0-9a-f]{8}:1\] 应用装载 \{"version":"1\.13\.1"\}$/)
+  assert.match(call.body.lines[0], /^\d{4}-\d{2}-\d{2}T[\d:.]+Z \[info\] \[[0-9a-f]{8}:1\] 应用装载 \{"version":"1\.14\.0"\}$/)
   assert.match(call.body.lines[1], /\[error\] \[[0-9a-f]{8}:2\] 导入失败$/)
 })
 

@@ -2,6 +2,19 @@
 
 变更记录为双语：英文见 [CHANGELOG.en.md](./CHANGELOG.en.md)。
 
+## v1.14.0
+
+### 适配 Harness 0.2.1-rc.2
+逐项核对后确认 0.2.1 对插件所依赖的接口没有破坏性变化：`connection` / `remote.<ns>` 服务、`settings.describe`（无参、`namespaces[].ns/value`）、`llm.listConfigurableProviders`（`settingsNs`/`settingsPath`）、`pluginManager` 清单字段、宿主 Fetch 路由注册与路径校验、四个设置 slot 座位、全部 18 个 `--dsw-*` 主题令牌、插件列表页的分组钩子、DeepSeek 适配器常量、`__ModuleLoader__` 交付格式都保持不变。0.2.1 新增的是插件市场、`api-remote-access`（非 owner peer 的方法级鉴权，对本插件无影响）与平台化的客户端 bundle 文件名，插件无需改动即可继续工作。
+
+### 新功能
+- **兼容性自检脚本**（`npm run compat`）：直接读取本机安装的 Harness（桌面版 `app.asar`，自动查找或 `--asar` / `DSH_ASAR` 指定），把上面这些「不属于任何 npm 公开 API 的接口」逐项断言一遍并打印 PASS/FAIL。升级 Harness 后先跑它，失败项就是需要适配的地方；因为它需要本机安装包，不进入 CI。当前对 0.2.1-rc.2 **12/12 通过**。
+
+### 修复
+- **插件页分组搜不到**：设置面板里「插件」页的**会话插件 / 全局插件**分组标题此前不会被索引收录——DSH 的 CSS Module 类名保留驼峰（`RotMhW_groupTitle`），而页内选项采集用的是区分大小写的 `[class*="title"]`。现在改为大小写不敏感匹配，并优先采集较浅层的页面/分组标题，避免几十个插件卡片先把 24 条名额占满；这两类分组现在都能进入索引并跳到对应位置。
+- **索引缓存版本**：持久化索引结构升到 **v2**，旧缓存自动失效并重建（不必手动点「手动重建索引」），升级后立刻包含新采集的条目；写入 v2 时顺手清理旧的 v1 缓存键。
+- **页内搜索框不再被当成设置项**：插件页顶部自带一个搜索输入，它的 `<label>` 会被页内选项采集误当成一个设置项（结果里出现「插件 › 搜索插件」）。现在含 `input[type="search"]` 的 `<label>` 会被跳过；普通设置行的文本输入不受影响。
+
 ## v1.13.1
 
 ### 修复

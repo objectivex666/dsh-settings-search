@@ -27,13 +27,16 @@
 ## 运行测试
 
 ```bash
-npm test                                  # 结构自检 + 全部回归测试（当前 63 例）
+npm test                                  # 结构自检 + 全部回归测试（当前 65 例）
 node scripts/check.mjs                    # 只跑结构自检
 node --test scripts/ai.test.mjs           # 只跑浏览器半边
 node --test scripts/log.test.mjs          # 只跑宿主半边
+npm run compat                            # 针对本机已安装的 Harness 核对非公开接口
 ```
 
 PR 必须让 `npm test` 全绿。修 Bug 请补一个能复现该 Bug 的用例；加功能请覆盖成功与失败两条路径。
+
+`npm run compat` 检查的是插件依赖、但不属于任何 npm 公开 API 的接口（服务名、Remote 描述符、slot 座位、主题令牌、Fetch 路由、DeepSeek 常量、客户端交付格式）。它需要本机装有 Harness，因此**不进入 CI**；Harness 升级后先跑一遍，失败项就是本次要适配的地方。
 
 ## 代码约定
 
