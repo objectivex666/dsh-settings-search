@@ -7,6 +7,8 @@
 [![node](https://img.shields.io/node/v/@objectivex666/dsh-settings-search)](https://nodejs.org)
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 [![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/objectivex666/dsh-settings-search)
+[![dshbase 实测可装](https://dshbase.com/badges/dsh-settings-search-plugin.svg)](https://dshbase.com/zh/plugins/dsh-settings-search-plugin/)
+[![dshfind](https://dshfind.com/api/card/objectivex666/dsh-settings-search?lang=zh)](https://dshfind.com/zh/plugins/objectivex666/dsh-settings-search?ref=badge)
 
 **English** · [中文](./README.md)
 
