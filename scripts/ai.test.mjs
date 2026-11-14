@@ -14,6 +14,8 @@ const instrumented = source.replace(hook, `
       modelsUrl, fetchAiModels,
       readIndexCache, serializeHarvest,
       readDshModelConfig, otherPluginFingerprint, DEEP_SLOTS,
+      pinyinKeys, tokenMatch, intentKeywords, directMatch,
+      localRelatedKeyword, aiRelatedKeyword,
       log, flushLogs, discardPendingLogs, sessionLogText, logTarget, readLogCount,
     })
 ${hook}`)
@@ -25,11 +27,17 @@ const storage = () => {
     removeItem: (key) => values.delete(key),
   }
 }
-const json = (data, status = 200) => ({
-  ok: status >= 200 && status < 300,
-  status,
-  json: async () => data,
-})
+const json = (data, status = 200) => {
+  const text = JSON.stringify(data)
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: () => String(new TextEncoder().encode(text).byteLength) },
+    body: null,
+    text: async () => text,
+    json: async () => data,
+  }
+}
 const plain = (value) => JSON.parse(JSON.stringify(value))
 const ollama = { provider: 'ollama', baseUrl: '', model: 'local-model:7b', apiKey: '' }
 const openai = { provider: 'openai', baseUrl: 'https://example.test/v1', model: 'cloud-model', apiKey: 'test-secret' }
@@ -151,9 +159,15 @@ const pluginsPageDom = () => {
         el('span', { class: 'RotMhW_visuallyHidden', text: '搜索插件' }),
         el('input', { attr: { type: 'search' } }),
       ]),
-      // More card titles than the 24-entry cap, so a DOM-order harvest would
+      el('ul', { class: 'RotMhW_plainPluginList' }, [
+        el('li', {}, [
+          el('strong', { text: 'PowerShell 命令工具' }),
+          el('span', { text: 'tool-pwsh' }),
+        ]),
+      ]),
+      // More card titles than the 64-entry cap, so a DOM-order harvest would
       // truncate the second group title before seeing it.
-      group('preset', '会话插件', 30),
+      group('preset', '会话插件', 70),
       group('global', '全局插件'),
     ]),
   ])
@@ -191,6 +205,8 @@ function load(fetchImpl = async () => json(reply('ollama'))) {
     CustomEvent: class { constructor(type) { this.type = type } },
     URL,
     AbortController,
+    TextEncoder,
+    TextDecoder,
     setTimeout,
     clearTimeout,
     fetch: async (url, options) => {
@@ -214,8 +230,8 @@ test('persistent settings index reuses matching fingerprints and drops invalid r
     },
   }
   assert.equal(Object.keys(api.serializeHarvest(new Map())).length, 0)
-  sandbox.localStorage.setItem('dsh-settings-search:index:v2', JSON.stringify({
-    version: 2,
+  sandbox.localStorage.setItem('dsh-settings-search:index:v3', JSON.stringify({
+    version: 3,
     fingerprint: 'manager:test',
     updatedAt: 1,
     harvest: records,
@@ -255,9 +271,10 @@ test('persistent settings index reuses matching fingerprints and drops invalid r
 
 test('readIndexCache rejects malformed and legacy persisted index payloads', () => {
   const { api, sandbox } = load()
-  const legacy = JSON.stringify({ version: 1, fingerprint: 'manager:old', updatedAt: 1, harvest: {} })
-  for (const value of ['{', '{"version":2}', 'null', legacy]) {
-    sandbox.localStorage.setItem('dsh-settings-search:index:v2', value)
+  const legacyV2 = JSON.stringify({ version: 2, fingerprint: 'manager:v2', updatedAt: 1, harvest: {} })
+  const legacyV1 = JSON.stringify({ version: 1, fingerprint: 'manager:old', updatedAt: 1, harvest: {} })
+  for (const value of ['{', '{"version":3}', 'null', legacyV2, legacyV1]) {
+    sandbox.localStorage.setItem('dsh-settings-search:index:v3', value)
     assert.equal(api.readIndexCache(), null)
   }
 })
@@ -267,6 +284,7 @@ test('writing the index uses the current schema and drops the legacy cache key',
   const records = { 'settings.general.item': { row1: { title: 'Row', idx: 0, text: '', inner: [] } } }
   sandbox.localStorage.setItem('dsh-settings-search:index:v1', JSON.stringify({ version: 1, fingerprint: 'manager:old', updatedAt: 1, harvest: records }))
   sandbox.localStorage.setItem('dsh-settings-search:index:v2', JSON.stringify({ version: 2, fingerprint: 'manager:test', updatedAt: 1, harvest: records }))
+  sandbox.localStorage.setItem('dsh-settings-search:index:v3', JSON.stringify({ version: 3, fingerprint: 'manager:test', updatedAt: 1, harvest: records }))
   api.apply({
     effect: (fn) => fn(),
     get: () => null,
@@ -282,8 +300,9 @@ test('writing the index uses the current schema and drops the legacy cache key',
   const model = api.__indexTestModel
   assert.equal(model.persistIndex('manager:next'), true)
   assert.equal(sandbox.localStorage.getItem('dsh-settings-search:index:v1'), null)
-  const raw = JSON.parse(sandbox.localStorage.getItem('dsh-settings-search:index:v2'))
-  assert.equal(raw.version, 2)
+  assert.equal(sandbox.localStorage.getItem('dsh-settings-search:index:v2'), null)
+  const raw = JSON.parse(sandbox.localStorage.getItem('dsh-settings-search:index:v3'))
+  assert.equal(raw.version, 3)
   assert.equal(raw.fingerprint, 'manager:next')
 })
 
@@ -299,6 +318,7 @@ test('in-page group titles on the Plugins page are harvested and searchable', ()
   const labels = options.map((item) => item.label)
   assert.ok(labels.includes('会话插件'), `会话插件 missing from ${JSON.stringify(labels)}`)
   assert.ok(labels.includes('全局插件'), `全局插件 missing from ${JSON.stringify(labels)}`)
+  assert.ok(labels.includes('PowerShell 命令工具'), `plain plugin-list row missing from ${JSON.stringify(labels)}`)
   for (const label of ['会话插件', '全局插件']) {
     const option = options.find((item) => item.label === label)
     assert.equal(option.kind, 'option')
@@ -308,6 +328,95 @@ test('in-page group titles on the Plugins page are harvested and searchable', ()
   // The page's own filter box is not a setting: its label text must not become
   // an in-page option (the Plugins tab renders one).
   assert.ok(!labels.includes('搜索插件'), `the page filter leaked into the index: ${JSON.stringify(labels)}`)
+})
+
+test('the settings-search page and its .sss-vr-label controls stay indexed', () => {
+  const { api, sandbox } = load()
+  const label = (text) => el('span', { class: 'sss-vr-label', text })
+  const page = el('div', { class: 'sss-vr' }, [
+    el('span', { class: 'sss-vr-name', text: '设置搜索' }),
+    el('div', { class: 'sss-vr-field' }, [label('搜索框样式')]),
+  ])
+  const dialog = el('div', { attr: { role: 'dialog' } }, [
+    el('div', { class: 'settings-nav' }, [
+      el('button', { attr: { 'aria-current': 'true' }, text: '设置搜索' }),
+    ]),
+    el('div', { attr: { 'data-slot': 'settings.section' } }, [page]),
+  ])
+  sandbox.document = fakeDocument(dialog)
+  const ctx = pluginsPageCtx()
+  ctx.slots.entries = (slot) => slot === 'settings.section'
+    ? [{ options: { id: 'settings-search', order: 1600, label: '设置搜索' } }]
+    : []
+  api.apply(ctx)
+  const model = api.__indexTestModel
+
+  assert.ok(model.readSections().some((section) => section.id === 'settings-search'))
+  model.runHarvest()
+  let options = model.readDeep().filter((item) => item.parentLabel === '设置搜索')
+  assert.deepEqual(plain(options.map((item) => item.label)), ['搜索框样式'])
+
+  // Expanding the page adds controls after the first non-empty harvest. They
+  // must merge into the existing record rather than being ignored.
+  for (const text of ['AI 联想搜索', '设置索引']) {
+    const field = el('div', { class: 'sss-vr-field' }, [label(text)])
+    field.parentElement = page
+    page.children.push(field)
+  }
+  model.runHarvest()
+  options = model.readDeep().filter((item) => item.parentLabel === '设置搜索')
+  const labels = options.map((item) => item.label)
+  for (const expected of ['搜索框样式', 'AI 联想搜索', '设置索引']) {
+    assert.ok(labels.includes(expected), `${expected} missing from ${JSON.stringify(labels)}`)
+  }
+  for (const option of options) {
+    assert.equal(option.slot, 'settings.section')
+    assert.equal(option.pageLabel, '设置搜索')
+  }
+})
+
+test('pinyin keeps known segments after an unknown character', () => {
+  const { api } = load()
+  const keys = api.pinyinKeys('知演功能')
+  assert.ok(keys, 'known pinyin segments must survive an unknown character')
+  assert.equal(keys.full, 'zhi\u0000gongneng')
+  assert.ok(keys.initialSegments.includes('gn'))
+  assert.ok(api.tokenMatch('知演功能', keys, 'gn'))
+  assert.equal(api.tokenMatch('知演功能', keys, 'zhign'), null, 'matching must not cross the unknown character')
+})
+
+test('intent expansion rejects one-character and internal substring noise', () => {
+  const { api } = load()
+  assert.deepEqual(plain(api.intentKeywords('文件')), [])
+  assert.deepEqual(plain(api.intentKeywords('文')), [])
+  const cancel = api.intentKeywords('取消')
+  assert.ok(cancel.includes('订阅'))
+  assert.ok(api.intentKeywords('我想取消订阅').includes('订阅'))
+})
+
+test('local intent suggestions require every query token', () => {
+  const { api } = load()
+  const language = {
+    keys: api.pinyinKeys('语言'),
+    hay: '语言',
+  }
+  const expanded = new Map([
+    ['中文', ['语言']],
+    ['外观', []],
+  ])
+  assert.equal(api.localRelatedKeyword(language, language.hay, ['中文'], expanded), '语言')
+  assert.equal(
+    api.localRelatedKeyword(language, language.hay, ['外观', '中文'], expanded),
+    null,
+    'an unmatched token must not be ignored',
+  )
+  const theme = { keys: api.pinyinKeys('主题'), hay: '主题' }
+  const themeExpanded = new Map([
+    ['太亮', ['主题']],
+    ['主题', []],
+  ])
+  assert.equal(api.localRelatedKeyword(theme, theme.hay, ['太亮', '主题'], themeExpanded), '主题')
+  assert.equal(api.aiRelatedKeyword(language, language.hay, ['语言']), 'AI · 语言')
 })
 
 test('Ollama configuration persists and requires a model but no key', () => {
@@ -491,8 +600,50 @@ test('malformed responses and native error payloads cannot pass connectivity che
     const { api } = load(async () => json(data))
     assert.equal((await api.testAiService(ollama)).code, 'bad-response')
   }
-  const { api } = load(async () => ({ ok: true, json: async () => { throw new SyntaxError('invalid JSON') } }))
+  const { api } = load(async () => ({ ok: true, status: 200, headers: { get: () => null }, body: null, text: async () => '{' }))
   assert.equal((await api.testAiService(ollama)).code, 'bad-response')
+})
+
+test('oversized provider responses are rejected without an unbounded read', async () => {
+  let cancelled = false
+  const { api } = load(async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => String(1024 * 1024 + 1) },
+    body: { cancel: async () => { cancelled = true } },
+    text: async () => { throw new Error('must not read declared-oversized body') },
+  }))
+  assert.equal((await api.fetchAiModels(openai)).code, 'bad-response')
+  assert.equal(cancelled, true)
+  api.setAiConfig(openai)
+  await assert.rejects(api.requestUserAi('intent', 'Language'), { name: 'AI_BAD_RESPONSE' })
+})
+
+test('streamed provider responses stop at the byte ceiling', async () => {
+  let cancelled = false
+  const chunk = new Uint8Array(1024 * 1024 + 1)
+  const { api } = load(async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => null },
+    body: {
+      getReader: () => {
+        let sent = false
+        return {
+          read: async () => {
+            if (sent) return { done: true, value: undefined }
+            sent = true
+            return { done: false, value: chunk }
+          },
+          cancel: async () => { cancelled = true },
+          releaseLock: () => {},
+        }
+      },
+    },
+    text: async () => { throw new Error('stream must be used') },
+  }))
+  assert.equal((await api.fetchAiModels(openai)).code, 'bad-response')
+  assert.equal(cancelled, true)
 })
 
 test('network failure is reported without claiming connection success', async () => {

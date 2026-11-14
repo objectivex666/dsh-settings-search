@@ -8,7 +8,10 @@
  * that never deletes the active file, and a tail that never starts mid-line.
  */
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import {
+  closeSync, existsSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync,
+  rmSync, statSync, writeFileSync,
+} from 'node:fs'
 import { basename, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import test from 'node:test'
@@ -228,6 +231,31 @@ test('a fresh store reads the count of a file written by an earlier run', () => 
   }
 })
 
+test('a persisted log is counted in bounded chunks instead of one large allocation', () => {
+  const { dir, cleanup } = withStore({ now: () => day('2026-10-06') })
+  try {
+    const file = join(dir, 'settings-search-2026-10-06.log')
+    writeFileSync(file, 'entry\n'.repeat(20000), 'utf8')
+    let largestRequest = 0
+    let reads = 0
+    const io = {
+      openSync,
+      closeSync,
+      readSync(fd, buffer, offset, length, position) {
+        largestRequest = Math.max(largestRequest, length)
+        reads += 1
+        return readSync(fd, buffer, offset, length, position)
+      },
+    }
+    const reopened = createLogStore({ dir, now: () => day('2026-10-06'), io })
+    assert.equal(reopened.count(), 20000)
+    assert.ok(largestRequest <= 64 * 1024, `requested ${largestRequest} bytes`)
+    assert.ok(reads > 1, 'the file must be streamed across multiple reads')
+  } finally {
+    cleanup()
+  }
+})
+
 const send = async (route, method, body, query = '') => {
   const request = new Request(`http://dsh.internal${route.path}${query}`, {
     method,
@@ -268,7 +296,7 @@ test('the log route serves the tail and accepts append/clear only', async () => 
   try {
     assert.equal(route.path, '/api/settings-search-log')
     assert.deepEqual(route.methods, ['GET', 'POST'])
-    assert.equal(route.requestBody, 'buffered')
+    assert.equal(route.requestBody, 'streaming')
 
     const appended = await send(route, 'POST', { action: 'append', lines: ['hello'] })
     assert.equal(appended.status, 200)
@@ -288,6 +316,28 @@ test('the log route serves the tail and accepts append/clear only', async () => 
   } finally {
     cleanup()
   }
+})
+
+test('an over-budget request body is rejected before any action runs', async () => {
+  let actions = 0
+  const route = createLogRoute({
+    dir: 'unused',
+    file: 'unused',
+    ensure() {},
+    append() { actions += 1; return 0 },
+    count() { actions += 1; return 0 },
+    clear() { actions += 1; return true },
+    open() { actions += 1; return { failure: undefined, command: 'test' } },
+    read() { actions += 1; return { text: '', size: 0, truncated: false } },
+  })
+  const request = new Request('http://dsh.internal/api/settings-search-log', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'append', lines: ['x'.repeat(257 * 1024)] }),
+  })
+  const response = await route.fetch(request)
+  assert.equal(response.status, 400)
+  assert.equal(actions, 0)
 })
 
 test('the folder launcher uses the OS shell open verb, never a hidden file manager', () => {

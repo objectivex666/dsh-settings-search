@@ -122,6 +122,15 @@ const mustInclude = (text, needle, message) => {
   if (!text.includes(needle)) throw new Error(message ?? `missing ${JSON.stringify(needle)}`)
 }
 
+/**
+ * Assert one pattern. Bundled client code is minified and re-emitted by every
+ * release, so it may quote a string with `"`, `'`, or a template literal
+ * without any behavioural change — match the code, not the quoting.
+ */
+const mustMatch = (text, pattern, message) => {
+  if (!pattern.test(text)) throw new Error(message ?? `missing ${pattern}`)
+}
+
 const main = () => {
   const archivePath = resolveAsar()
   const archive = openAsar(archivePath)
@@ -133,13 +142,17 @@ const main = () => {
     console.log(`Version: ${connectionManifest.version}\n`)
 
     check('client connection service is provided', () => {
-      mustInclude(clientSourceOf(archive, 'dsh-client-connection', cache), 'provide("connection"', 'the connection handle is gone')
+      mustMatch(
+        clientSourceOf(archive, 'dsh-client-connection', cache),
+        /provide\(\s*(['"`])connection\1/,
+        'the connection handle is gone',
+      )
       return 'ctx.connection'
     })
 
     check('Remote namespaces live at remote.<namespace>', () => {
       const gateway = clientSourceOf(archive, 'dsh-api-gateway', cache)
-      mustInclude(gateway, 'super(ctx, "remote")', 'the `remote` service is gone')
+      mustMatch(gateway, /super\(\s*ctx\s*,\s*(['"`])remote\1\s*\)/, 'the `remote` service is gone')
       mustInclude(gateway, 'remote.${namespace}', 'namespace service keys changed')
       return 'remote.<ns>'
     })
@@ -181,6 +194,7 @@ const main = () => {
     check('host connection still owns the exact-Fetch route registry', () => {
       const host = archive.read('dsh/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js')
       mustInclude(host, 'registerFetchRoute', 'the host fetch registry is gone')
+      mustInclude(host, 'bodyMode === "streaming"', 'streaming exact routes are no longer supported')
       const segment = /const ENDPOINT_SEGMENT_PATTERN = \/\^\[([^\]]+)\]/.exec(host)
       if (segment === null) throw new Error('endpoint validation pattern not found')
       const sample = 'settings-search-log'

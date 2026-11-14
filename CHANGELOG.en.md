@@ -2,6 +2,21 @@
 
 The changelog is bilingual; see [CHANGELOG.md](./CHANGELOG.md) for the Chinese version.
 
+## v1.14.1
+
+### Adapted to Harness 0.2.2-rc.3
+An item-by-item audit found no breaking change in the surfaces this plugin relies on: the `connection` and `remote.<ns>` services, `settings.describe` (no arguments; `namespaces[].ns/value`), `llm.listConfigurableProviders` (`settingsNs`/`settingsPath`), the `pluginManager` inventory fields, the host Fetch route registry and path validation, all four settings slot seats, all 18 `--dsw-*` theme tokens, the Plugins-page group hooks, the DeepSeek adapter constants, and the `__ModuleLoader__` hand-off format are unchanged. The 0.2.2 breaking changes land on UI interfaces this plugin does not use — context menus (`ContextMenuTarget`, CSS-anchored menus), file actions, custom-overlay drag regions, and subscription-shaped tools — so the plugin keeps working without changes. The settings search page and the header search box were also confirmed mounted and active in the running 0.2.2-rc.3 desktop build.
+
+### Fixes
+- **Resource-boundary hardening (security)**: the host log route now reads request bodies as a stream and stops at 256 KB; persisted log counting scans in 64 KB chunks instead of loading a file of up to 100 MB at once; AI model/chat responses are capped at 1 MB before decoding, checking both `Content-Length` and streamed byte counts so an untrusted service or unbounded request cannot exhaust host or browser resources.
+- **False compatibility failure**: after the 0.2.2-rc.3 repack, the client bundles spell the service names in `ctx.provide()` and `super(ctx, ...)` with backtick template literals, while the two `npm run compat` assertions only matched double-quoted strings — so "the service still exists" was reported as "the service is gone". They now match the code rather than the quoting (single, double, and template literals are all accepted). Currently **12/12 pass** against 0.2.2-rc.3.
+- **Plugin and self settings are searchable**: the `settings-search` section is no longer excluded. `.sss-vr-label` controls such as Search style, AI-assisted search, Settings index, API type, and Logs now enter the index and navigate back to the plugin page.
+- **Collapsed plugin settings are harvested**: the warm-up pass temporarily expands plugin setting cards within each top-level section, harvests them, and restores their prior state. Plugin rows rendered as unlabelled `li` / `role="listitem"` elements are indexed separately, and controls revealed after an earlier non-empty harvest are merged into the existing page record instead of being ignored.
+- **Stricter search semantics**: direct and local intent results both require every query token to match the same setting. AI fallback runs only when there is no local result. Intent expansion no longer treats arbitrary one-character or internal substrings as phrases, and no longer introduces unrelated pinyin-initial collisions.
+- **Safer pinyin fallback**: when a compact pinyin-table entry is missing, that character becomes a segment boundary instead of disabling pinyin matching for the entire label.
+- **Navigation verification**: selecting a result now verifies that the target section switched and that the row exists. Targets inside collapsed plugin cards are revealed before being highlighted; unresolved targets fall back to the manual path hint.
+- **Index cache schema**: the persisted index moved to **v3**. Old caches are discarded and rebuilt automatically, and writing v3 removes v2/v1.
+
 ## v1.14.0
 
 ### Adapted to Harness 0.2.1-rc.2

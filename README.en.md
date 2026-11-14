@@ -45,7 +45,7 @@ The commands below target a command-line profile. The desktop app manages its ow
 
 ### Prerequisites
 
-- **DeepSeek Harness (DSH)** — DSH 0.2 stable (desktop and `dsh web`) and earlier 0.1 builds; the plugin picks the API the running release offers. Verified against **0.2.1-rc.2** item by item (`npm run compat`); behaviour on 0.2.0 and earlier is unchanged.
+- **DeepSeek Harness (DSH)** — DSH 0.2 stable (desktop and `dsh web`) and earlier 0.1 builds; the plugin picks the API the running release offers. Verified against **0.2.2-rc.3** item by item (`npm run compat`); behaviour on 0.2.1 and earlier is unchanged.
 - **Node.js** >= 18 (LTS recommended).
 
 ### From npm (recommended)
